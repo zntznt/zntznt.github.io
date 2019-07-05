@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--What you see here is derived from http://katydecorah.com/hey-guys/, which source I downloaded and then modified to suit my own needs-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<title>I LIKE STUFF</title>
+<meta name="description" content="A list of things I like">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+<style>
+html,
+body,
+.flex {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+body {
+  background: #020516;
+  color: #E4A71E;
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 700;
+  font-size: 3em;
+  -webkit-font-smoothing : none;
+}
+.flex {
+  word-wrap: break-word;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+::selection {
+  background: darkorange;
+}
+</style>
+</head>
+<body>
+<div class="flex" id="flex"></div>
+<script src="files/like.js"></script>
+<script>
+function randomize() {
+  var alternative = alternatives[Math.floor(Math.random() * alternatives.length)];
+  document.getElementById("flex").innerHTML = "I LIKE " + alternative;
+  document.title = "I LIKE " + alternative;
+}
+randomize();
+</script>
+</body>
+</html>
