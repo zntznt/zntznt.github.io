@@ -46,7 +46,7 @@ body {
 }
 </style>
 </head>
-<body>
+<body onclick="history.go(0);">
 <div class="flex" id="flex"></div>
 <script src="files/like.js"></script>
 <script>
@@ -56,6 +56,12 @@ function randomize() {
   document.title = "I LIKE " + alternative;
 }
 randomize();
+</script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function()
+{
+document.querySelector("#time").innerHTML = new Date().toString();
+});
 </script>
 </body>
 </html>
