@@ -28,16 +28,17 @@ a {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
   display: grid;
   z-index: -1;
   pointer-events: none;
 }
 
 .lattice-tile {
-  background-size: cover;
+  width: 315px;
+  height: 315px;
+  background-size: 315px 315px;
   background-position: center;
+  background-repeat: no-repeat;
   transition: background-image 0.15s ease-in-out;
 }
 
@@ -48,17 +49,17 @@ a {
 </style>
 <script type="text/javascript">
   var totalCount = 2304;
-  var tileCount = 32;
-  var gridCols = 8;
-  var gridRows = 4;
+  var tileSize = 315;
   var selectedImages = [];
   var tiles = [];
+  var gridCols = 0;
+  var gridRows = 0;
 
-  // Select 32 random images from the pool
-  function selectRandomImages() {
+  // Select random images from the pool
+  function selectRandomImages(count) {
     var images = [];
     var used = {};
-    while (images.length < tileCount) {
+    while (images.length < count) {
       var num = Math.ceil(Math.random() * totalCount);
       if (!used[num]) {
         used[num] = true;
@@ -73,15 +74,29 @@ a {
     return selectedImages[Math.floor(Math.random() * selectedImages.length)];
   }
 
-  // Create the lattice grid
+  // Calculate grid dimensions based on window size
+  function calculateGrid() {
+    var cols = Math.ceil(window.innerWidth / tileSize) + 1;
+    var rows = Math.ceil(window.innerHeight / tileSize) + 1;
+    return { cols: cols, rows: rows };
+  }
+
+  // Create or rebuild the lattice grid
   function createLattice() {
-    selectedImages = selectRandomImages();
+    var grid = calculateGrid();
+    var totalTiles = grid.cols * grid.rows;
+
+    // Select 32 unique images to rotate through
+    selectedImages = selectRandomImages(32);
 
     var container = document.getElementById('lattice-bg');
-    container.style.gridTemplateColumns = 'repeat(' + gridCols + ', 1fr)';
-    container.style.gridTemplateRows = 'repeat(' + gridRows + ', 1fr)';
+    container.innerHTML = '';
+    tiles = [];
 
-    for (var i = 0; i < gridCols * gridRows; i++) {
+    container.style.gridTemplateColumns = 'repeat(' + grid.cols + ', ' + tileSize + 'px)';
+    container.style.gridTemplateRows = 'repeat(' + grid.rows + ', ' + tileSize + 'px)';
+
+    for (var i = 0; i < totalTiles; i++) {
       var tile = document.createElement('div');
       tile.className = 'lattice-tile';
       var imgNum = getRandomImage();
@@ -89,10 +104,14 @@ a {
       container.appendChild(tile);
       tiles.push(tile);
     }
+
+    gridCols = grid.cols;
+    gridRows = grid.rows;
   }
 
   // Change a random tile to a new image
   function changeTile() {
+    if (tiles.length === 0) return;
     var tileIndex = Math.floor(Math.random() * tiles.length);
     var newImg = getRandomImage();
     tiles[tileIndex].style.backgroundImage = 'url(images/bg/' + newImg + '.png)';
@@ -115,15 +134,30 @@ a {
     }
   }
 
+  // Handle window resize
+  var resizeTimeout;
+  function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      var grid = calculateGrid();
+      // Only rebuild if grid size actually changed
+      if (grid.cols !== gridCols || grid.rows !== gridRows) {
+        createLattice();
+      }
+    }, 150);
+  }
+
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       createLattice();
       startRotation();
+      window.addEventListener('resize', handleResize);
     });
   } else {
     createLattice();
     startRotation();
+    window.addEventListener('resize', handleResize);
   }
 </script>
 </head>
