@@ -64,6 +64,11 @@
     padding: 0px;
     margin: 0px;
   }
+
+  /* Ensure header cells stretch to full table width */
+  table td:only-child {
+    width: 100%;
+  }
   ul {
     font-size: 16px;
     margin: 0px;
