@@ -163,10 +163,16 @@ body.glitching::after {
   }
 
   // Start the cycle after page loads
-  window.addEventListener('DOMContentLoaded', function() {
-    ChangeIt(); // Initial background
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      ChangeIt();
+      setInterval(glitchTransition, cycleInterval);
+    });
+  } else {
+    // DOM already loaded, run immediately
+    ChangeIt();
     setInterval(glitchTransition, cycleInterval);
-  });
+  }
 </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
