@@ -17,7 +17,7 @@
   }
   .inner {
       border: 3px solid #73B036;
-      padding: 6;
+      padding: 6px;
       background-color: rgba(22,1,33,1.98);
       margin-left: auto;
       margin-right: auto;
@@ -59,4 +59,54 @@
   ul {
     font-size: 16px;
     margin: 0px;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .inner {
+      width: 90%;
+      padding: 10px;
+    }
+
+    .inner p {
+      font-size: 14px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    td {
+      display: block;
+      width: 100%;
+      border-width: 3px;
+    }
+
+    h1 {
+      font-size: 1.2em;
+    }
+
+    ul {
+      font-size: 14px;
+      padding-left: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .inner {
+      width: 95%;
+      padding: 8px;
+    }
+
+    .inner p {
+      font-size: 12px;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    h1 {
+      font-size: 1em;
+    }
+
+    td {
+      padding: 6px;
+    }
   }
