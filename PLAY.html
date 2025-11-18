@@ -10,7 +10,7 @@ body {
   color: #FF1E36;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 .inner {
   border-color: #FF1E36;
@@ -34,9 +34,9 @@ a {
 }
 
 .lattice-tile {
-  width: 315px;
-  height: 315px;
-  background-size: 315px 315px;
+  width: 64px;
+  height: 64px;
+  background-size: 64px 64px;
   background-position: center;
   background-repeat: no-repeat;
   transition: background-image 0.15s ease-in-out;
@@ -49,7 +49,7 @@ a {
 </style>
 <script type="text/javascript">
   var totalCount = 2304;
-  var tileSize = 315;
+  var tileSize = 64;
   var selectedImages = [];
   var tiles = [];
   var gridCols = 0;
