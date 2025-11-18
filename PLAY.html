@@ -5,38 +5,164 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GAMES</title>
 <link rel="stylesheet" href="files/styles.css">
-<script type="text/javascript">
-  var totalCount = 2304;
-  function ChangeIt()
-  {
-    var num = Math.ceil( Math.random() * totalCount );
-    document.body.background = 'images/bg/'+num+'.png';
-    document.body.style.backgroundRepeat = "repeat";
-  }
-</script>
 <style>
 body {
   color: #FF1E36;
-  background-position: left;
-  background-repeat: repeat;
-  background-size: 64px;
-  }
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
 .inner {
   border-color: #FF1E36;
   width: 70%;
-  }
+}
 td {
   border-color: #FF1E36;
-  }
+}
 a {
   background: #FF1E36;
-  }
+}
+
+/* Lattice background container */
+#lattice-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: grid;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.lattice-tile {
+  width: 315px;
+  height: 315px;
+  background-size: 315px 315px;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image 0.15s ease-in-out;
+}
+
+/* Ensure content stays above background */
+.outer {
+  z-index: 1;
+}
 </style>
+<script type="text/javascript">
+  var totalCount = 2304;
+  var tileSize = 315;
+  var selectedImages = [];
+  var tiles = [];
+  var gridCols = 0;
+  var gridRows = 0;
+
+  // Select random images from the pool
+  function selectRandomImages(count) {
+    var images = [];
+    var used = {};
+    while (images.length < count) {
+      var num = Math.ceil(Math.random() * totalCount);
+      if (!used[num]) {
+        used[num] = true;
+        images.push(num);
+      }
+    }
+    return images;
+  }
+
+  // Get a random image from our selected set
+  function getRandomImage() {
+    return selectedImages[Math.floor(Math.random() * selectedImages.length)];
+  }
+
+  // Calculate grid dimensions based on window size
+  function calculateGrid() {
+    var cols = Math.ceil(window.innerWidth / tileSize) + 1;
+    var rows = Math.ceil(window.innerHeight / tileSize) + 1;
+    return { cols: cols, rows: rows };
+  }
+
+  // Create or rebuild the lattice grid
+  function createLattice() {
+    var grid = calculateGrid();
+    var totalTiles = grid.cols * grid.rows;
+
+    // Select 32 unique images to rotate through
+    selectedImages = selectRandomImages(32);
+
+    var container = document.getElementById('lattice-bg');
+    container.innerHTML = '';
+    tiles = [];
+
+    container.style.gridTemplateColumns = 'repeat(' + grid.cols + ', ' + tileSize + 'px)';
+    container.style.gridTemplateRows = 'repeat(' + grid.rows + ', ' + tileSize + 'px)';
+
+    for (var i = 0; i < totalTiles; i++) {
+      var tile = document.createElement('div');
+      tile.className = 'lattice-tile';
+      var imgNum = getRandomImage();
+      tile.style.backgroundImage = 'url(images/bg/' + imgNum + '.png)';
+      container.appendChild(tile);
+      tiles.push(tile);
+    }
+
+    gridCols = grid.cols;
+    gridRows = grid.rows;
+  }
+
+  // Change a random tile to a new image
+  function changeTile() {
+    if (tiles.length === 0) return;
+    var tileIndex = Math.floor(Math.random() * tiles.length);
+    var newImg = getRandomImage();
+    tiles[tileIndex].style.backgroundImage = 'url(images/bg/' + newImg + '.png)';
+  }
+
+  // Start random tile changes
+  function startRotation() {
+    // Change tiles at random intervals between 200ms and 1000ms
+    function scheduleNext() {
+      var delay = 200 + Math.random() * 800;
+      setTimeout(function() {
+        changeTile();
+        scheduleNext();
+      }, delay);
+    }
+
+    // Start multiple rotation chains for more activity
+    for (var i = 0; i < 3; i++) {
+      scheduleNext();
+    }
+  }
+
+  // Handle window resize
+  var resizeTimeout;
+  function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      var grid = calculateGrid();
+      // Only rebuild if grid size actually changed
+      if (grid.cols !== gridCols || grid.rows !== gridRows) {
+        createLattice();
+      }
+    }, 150);
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      createLattice();
+      startRotation();
+      window.addEventListener('resize', handleResize);
+    });
+  } else {
+    createLattice();
+    startRotation();
+    window.addEventListener('resize', handleResize);
+  }
+</script>
 </head>
 <body>
-  <script type="text/javascript">
-    ChangeIt();
-  </script>
+  <div id="lattice-bg"></div>
   <div class="outer">
     <div class="middle">
       <div class="inner" draggable="true">
