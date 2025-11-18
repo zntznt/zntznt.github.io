@@ -1,17 +1,177 @@
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>λ</title>
 <link rel="stylesheet" href="files/styles.css">
-<style>body{overflow: hidden;}</style>
+<style>
+body {
+  overflow: hidden;
+}
+
+/* Glitch effect animations */
+@keyframes glitch-anim {
+  0% {
+    clip-path: inset(40% 0 61% 0);
+    transform: translate(-2px, 2px);
+  }
+  20% {
+    clip-path: inset(92% 0 1% 0);
+    transform: translate(1px, -1px);
+  }
+  40% {
+    clip-path: inset(43% 0 1% 0);
+    transform: translate(-1px, 2px);
+  }
+  60% {
+    clip-path: inset(25% 0 58% 0);
+    transform: translate(2px, 1px);
+  }
+  80% {
+    clip-path: inset(54% 0 7% 0);
+    transform: translate(-2px, -2px);
+  }
+  100% {
+    clip-path: inset(58% 0 43% 0);
+    transform: translate(0);
+  }
+}
+
+@keyframes glitch-skew {
+  0% {
+    transform: skew(0deg);
+  }
+  20% {
+    transform: skew(2deg);
+  }
+  40% {
+    transform: skew(-1deg);
+  }
+  60% {
+    transform: skew(3deg);
+  }
+  80% {
+    transform: skew(-2deg);
+  }
+  100% {
+    transform: skew(0deg);
+  }
+}
+
+@keyframes glitch-flash {
+  0%, 100% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  20% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.4;
+  }
+  40% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  70% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.9;
+  }
+}
+
+body.glitching {
+  animation: glitch-skew 0.3s ease-in-out;
+}
+
+body.glitching::before,
+body.glitching::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  background-size: inherit;
+  background-attachment: inherit;
+  pointer-events: none;
+}
+
+body.glitching::before {
+  left: 2px;
+  animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  background-color: rgba(255, 0, 0, 0.1);
+  mix-blend-mode: multiply;
+}
+
+body.glitching::after {
+  left: -2px;
+  animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both;
+  background-color: rgba(0, 255, 255, 0.1);
+  mix-blend-mode: multiply;
+}
+
+.glitch-flash {
+  animation: glitch-flash 0.3s ease-in-out;
+}
+</style>
 <script type="text/javascript">
   var totalCount = 29;
-  function ChangeIt()
-  {
-    var num = Math.ceil( Math.random() * totalCount );
-    document.body.background = 'images/glitch/'+num+'.png';
+  var cycleInterval = 4000; // Change image every 4 seconds
+
+  function ChangeIt() {
+    var num = Math.ceil(Math.random() * totalCount);
+    document.body.style.backgroundImage = 'url(images/glitch/' + num + '.png)';
     document.body.style.backgroundRepeat = "repeat";
+  }
+
+  function glitchTransition() {
+    // Add glitch effect
+    document.body.classList.add('glitching');
+
+    // Also flash the content
+    var inner = document.querySelector('.inner');
+    if (inner) {
+      inner.classList.add('glitch-flash');
+    }
+
+    // Change the background partway through the glitch
+    setTimeout(function() {
+      ChangeIt();
+    }, 150);
+
+    // Remove glitch effect after animation completes
+    setTimeout(function() {
+      document.body.classList.remove('glitching');
+      if (inner) {
+        inner.classList.remove('glitch-flash');
+      }
+    }, 300);
+  }
+
+  // Start the cycle after page loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      ChangeIt();
+      setInterval(glitchTransition, cycleInterval);
+    });
+  } else {
+    // DOM already loaded, run immediately
+    ChangeIt();
+    setInterval(glitchTransition, cycleInterval);
   }
 </script>
 
@@ -27,9 +187,6 @@
 
 </head>
 <body>
-  <script type="text/javascript">
-    ChangeIt();
-  </script>
   <div class="outer">
     <div class="middle">
       <div class="inner" draggable="true">
@@ -38,7 +195,7 @@
             <h1> ※ Ｚ ※ Ｎ ※ Ｔ ※ </h1>
           </td>
         </table>
-        </br>
+        <br>
         <table>
           <tr>
             <td rowspan="2" width="100%" valign="top">
@@ -49,24 +206,23 @@
             <td>
               <p>
                 <a href="https://twitter.com/zntznt">.\ethos-space</a>
-                </br>
+                <br>
                 <a href="https://www.instagram.com/exonomicon/">.\logos-space</a>
-                </br>
+                <br>
                 <a href="files/EXCUSE.txt">.\telos-space</a>
-                </br>
+                <br>
                 <a href="https://steamcommunity.com/id/zntznt/">.\ludus-space</a>
-                </br>
+                <br>
               </p>
             </td>
           </tr>
           <tr>
             <td>
-              <a class="mado" href="PLAY.html"><img class="mado" src=images/mado.gif></a>
+              <a class="mado" href="PLAY.html"><img class="mado" src="images/mado.gif" alt="Mado character - link to games page"></a>
             </td>
           </tr>
         </table>
     </div>
   </div>
-</div>
 </body>
 </html>
