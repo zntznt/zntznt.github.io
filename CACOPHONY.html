@@ -178,10 +178,13 @@ body {
 
     /* ----------------------------------------------------------------------
        THE SCORE
-       A paced sequence of mythic fragments, drawn from the world's creation
-       cosmologies, mirroring the arc of the narration: void, deep, the first
-       observer, the crossing, voice and blade, the severing, the making, and
-       the question that outlasts the answer.
+       Eight verbatim fragments from published creation literature, sequenced
+       to mirror the arc of the narration: the void, the deep, the first
+       stirring, the beasts of the abyss, the creative word, the severing,
+       the world made from the remains, and the question that outlasts the
+       answer. Four traditions: the Ṛgveda (Vedic), Genesis (Hebrew), the
+       Enūma Eliš (Babylonian — the Marduk/Tiāmat conflict at the center),
+       and the Poetic Edda (Norse). Sources noted in each `note`.
 
        `t` is the moment (in seconds) each fragment surfaces. The audio is
        ~42s; nudge these to taste once you hear it against the visuals.
@@ -189,29 +192,29 @@ body {
        (rays, shockwaves, warmth) and is lerped between movements.
     ---------------------------------------------------------------------- */
     var SCORE = [
-      { t: 0.0,  line: "Then was neither nonexistence nor existence.",
-                 note: "Ṛgveda, X.129",
+      { t: 0.0,  line: "Then was not non-existent nor existent: there was no realm of air, no sky beyond it.",
+                 note: "Ṛgveda 10.129.1 · tr. Griffith",
                  core: "#20204e", accent: "#5566cc", heat: 0.05 },
-      { t: 5.5,  line: "Only darkness, hidden by darkness — the unlit water.",
-                 note: "Nun · Ginnungagap · the formless Hundun",
+      { t: 5.5,  line: "The earth was without form, and void; and darkness was upon the face of the deep.",
+                 note: "Genesis 1:2 · King James Version",
                  core: "#28205a", accent: "#4a5fd0", heat: 0.10 },
-      { t: 11.0, line: "Then one awoke: the first to perceive, the first to name.",
-                 note: "the observer",
+      { t: 11.0, line: "Thereafter rose Desire in the beginning, Desire, the primal seed and germ of Spirit.",
+                 note: "Ṛgveda 10.129.4 · tr. Griffith",
                  core: "#3a2a72", accent: "#6f7ad6", heat: 0.18 },
-      { t: 16.0, line: "He set out across the great unknown, where the old beasts coil.",
-                 note: "Tiāmat, mother of the abyss",
+      { t: 16.0, line: "She spawned monster-serpents, sharp of tooth and merciless of fang; with poison instead of blood she filled their bodies.",
+                 note: "Enūma Eliš I · tr. L. W. King — of Tiāmat",
                  core: "#2f3a84", accent: "#46c6e0", heat: 0.32 },
-      { t: 21.5, line: "From his mouth, a thousand truths. In his hand, the blade.",
-                 note: "“let there be —”",
+      { t: 21.5, line: "He spake with his mouth, and the garment vanished; again he commanded it, and the garment reappeared.",
+                 note: "Enūma Eliš IV · tr. L. W. King — the proving of the word",
                  core: "#b23a2a", accent: "#ffcc55", heat: 0.85 },
-      { t: 27.0, line: "The ancient ones were split, like a shell, in two.",
-                 note: "Marduk · Ymir · Pangu",
+      { t: 27.0, line: "He split her up like a flat fish into two halves; one half of her he stablished as a covering for heaven.",
+                 note: "Enūma Eliš IV.137 · tr. L. W. King",
                  core: "#ff1e36", accent: "#ffffff", heat: 1.0 },
-      { t: 32.5, line: "From their remains, a world — sky from the skull, sea from the blood.",
-                 note: "of the slain, all things",
+      { t: 32.5, line: "Out of Ymir's flesh was fashioned the earth, and the ocean out of his blood; of his bones the hills, of his skull the heavens high.",
+                 note: "Grímnismál 40 · Poetic Edda, tr. Bellows",
                  core: "#d9a24a", accent: "#ffe9b0", heat: 0.80 },
-      { t: 38.0, line: "It will fall to chaos again. Who knows whence it rose, or whether it rose at all?",
-                 note: "— and there is no answer",
+      { t: 38.0, line: "Whence all creation had its origin, he, whether he fashioned it or whether he did not — he knows, or maybe even he does not know.",
+                 note: "Ṛgveda 10.129.7 · tr. Griffith",
                  core: "#2c2c66", accent: "#5a78d0", heat: 0.25 }
     ];
 
