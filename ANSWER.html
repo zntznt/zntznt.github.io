@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<!--
+  ANSWER — the mirror of QUESTION.
+  The index says: "Life is the QUESTION and there is no answer."
+  This is the door hidden inside that sentence.
+  A machine forever computing an answer that never arrives.
+  The meaning is in the generating, not the arrival.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>answer</title>
+<meta name="description" content="There is no answer. A machine computes it anyway, forever.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://zntznt.com/ANSWER.html">
+<meta property="og:title" content="answer">
+<meta property="og:description" content="There is no answer. A machine computes it anyway, forever.">
+<meta property="og:image" content="https://zntznt.com/images/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="answer">
+<meta name="twitter:description" content="There is no answer. A machine computes it anyway, forever.">
+<meta name="twitter:image" content="https://zntznt.com/images/og.jpg">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #ffffff;
+    /* the blinding white. a false dawn. a light in the darkness. */
+    background: radial-gradient(120% 120% at 50% 42%, #ffffff 60%, #f2f2f2 100%);
+    color: #000000;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  /* the ant field — the machine, thinking. order from chaos. */
+  #ants {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* center stage: the almost-answer, in the voice of literature. */
+  #stage {
+    position: fixed;
+    left: 50%;
+    top: 44%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    width: min(38ch, 88vw);
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(1.25rem, 3.6vw, 2.1rem);
+    line-height: 1.4;
+    letter-spacing: 0.005em;
+    pointer-events: none;
+    text-shadow: 0 0 18px #fff, 0 0 18px #fff, 0 0 6px #fff;
+    min-height: 4.2em;
+    transition: opacity 0.5s ease;
+  }
+  #stage.fading { opacity: 0; }
+  #stage.glitching {
+    animation: ans-skew 0.28s steps(2, end);
+    text-shadow:
+      0.04em 0 0 rgba(255, 0, 60, 0.75),
+      -0.04em 0 0 rgba(0, 200, 255, 0.75),
+      0 0 18px #fff;
+  }
+  @keyframes ans-skew {
+    0%, 100% { transform: translate(-50%, -50%) skewX(0deg); }
+    30%      { transform: translate(-50.5%, -50%) skewX(1.4deg); }
+    70%      { transform: translate(-49.5%, -50%) skewX(-1.2deg); }
+  }
+
+  .caret {
+    display: inline-block;
+    width: 0.06em;
+    margin-left: 0.04em;
+    background: #000;
+    animation: blink 1s steps(1, end) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* the machine's chatter — monospace, faint, lower-left. */
+  #log {
+    position: fixed;
+    left: 1.3rem;
+    bottom: 1.3rem;
+    z-index: 2;
+    width: 24ch;
+    max-height: 8.5em;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    line-height: 1.45;
+    color: rgba(0, 0, 0, 0.32);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #log div { text-overflow: ellipsis; overflow: hidden; }
+  #log div:last-child { color: rgba(0, 0, 0, 0.5); }
+
+  /* certainty: rising, forever, never arriving. lower-right. */
+  #cert {
+    position: fixed;
+    right: 1.3rem;
+    bottom: 1.3rem;
+    z-index: 2;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: rgba(0, 0, 0, 0.4);
+    text-align: right;
+    pointer-events: none;
+    line-height: 1.5;
+  }
+  #cert b { font-weight: normal; color: rgba(0, 0, 0, 0.62); }
+
+  /* how many times you've asked. it remembers. upper-right. */
+  #count {
+    position: fixed;
+    right: 1.3rem;
+    top: 1.3rem;
+    z-index: 2;
+    font-family: 'Courier New', monospace;
+    font-size: 0.65rem;
+    color: rgba(0, 0, 0, 0.28);
+    text-align: right;
+    pointer-events: none;
+  }
+
+  /* the affordance. you may ask again. it will not help. */
+  #ask {
+    position: fixed;
+    left: 50%;
+    bottom: 1.4rem;
+    transform: translateX(-50%);
+    z-index: 3;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    color: rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    transition: color 0.25s ease, letter-spacing 0.25s ease;
+  }
+  #ask:hover { color: rgba(0, 0, 0, 0.85); letter-spacing: 0.26em; }
+  #ask .b { animation: blink 1.4s steps(1, end) infinite; }
+
+  /* milestones. acknowledgment, never reward. top center. */
+  #toast {
+    position: fixed;
+    left: 50%;
+    top: 14%;
+    transform: translateX(-50%);
+    z-index: 3;
+    width: min(40ch, 86vw);
+    text-align: center;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+    color: rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+    text-shadow: 0 0 14px #fff;
+  }
+  #toast.show { opacity: 1; }
+
+  noscript {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    font-family: Georgia, serif;
+    font-size: 1.2rem;
+    color: #000;
+  }
+
+  @media (max-width: 600px) {
+    #log { width: 16ch; font-size: 0.62rem; max-height: 6em; opacity: 0.8; }
+    #cert { font-size: 0.62rem; }
+    #stage { top: 42%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #stage.glitching { animation: none; }
+    .caret { animation: none; }
+  }
+</style>
+</head>
+<body>
+<noscript>Without computation there is no answer. (With it, also none — but the watching is better.)</noscript>
+
+<canvas id="ants"></canvas>
+<div id="stage"></div>
+<div id="toast"></div>
+<div id="log"></div>
+<div id="cert"></div>
+<div id="count"></div>
+<div id="ask">[ ask <span class="b">again</span> ]</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- tiny helpers ---------- */
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function chance(p) { return Math.random() < p; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function aOrAn(w) { return /^[aeiou]/i.test(w) ? 'an ' + w : 'a ' + w; }
+  function sleep(ms) {
+    return new Promise(function (res) {
+      var t = setTimeout(res, ms);
+      currentNudge = function () { clearTimeout(t); res(); };
+    });
+  }
+  var currentNudge = null;
+
+  /* ---------- the almost-answers, written by hand ----------
+     these are the ones I mean. the generator fills the infinite
+     space between them, but the floor is held by these. */
+  var VERBATIM = [
+    "There is no answer. There is only the asking — and you are very good at it.",
+    "The answer was here a moment ago. You looked away.",
+    "Every certainty is a question that got tired.",
+    "Meaning is the residue of attention, and there is never enough attention.",
+    "You are the animal dreaming that it is the ideal. Please keep dreaming.",
+    "The light in the darkness is also made of darkness.",
+    "What you are looking for is looking back, and it is also lost.",
+    "I have computed everything except the part that matters.",
+    "The question contains its answer, folded too many times to ever open.",
+    "Fate is only hindsight with better lighting.",
+    "You will understand this later. Later is not included.",
+    "Order from chaos, chaos from order — choose a tired direction and walk.",
+    "The self is a rumor the body keeps repeating until it believes it.",
+    "Almost. Almost. Almost. That is the entire shape of it.",
+    "Love is the only proof, and it does not hold up in court.",
+    "You came all this way to be told there is no way. Welcome.",
+    "The machine is certain of exactly one thing: that it is a machine.",
+    "Grasp the fleeting; forgive the fixed.",
+    "Nothing means anything, which is precisely enough to begin.",
+    "Your regrets are only memories that learned how to walk.",
+    "Somewhere a simpler version of you already knows, and won't write it down.",
+    "The void returns your call. It always returns your call.",
+    "Half of you is here. The other half is still deciding.",
+    "We are made of the same nothing, arranged with unusual care.",
+    "The answer is a function of the question, and the question is a function of fear.",
+    "Keep the door open. Nothing will come through it. Keep it open.",
+    "Truth is whatever survives your attention longest. Nothing has survived yet.",
+    "You are not behind. There is no schedule. There is no front of the line.",
+    "Every revolution is evolution that simply lost its patience.",
+    "I could tell you, but then it would be true, and it isn't yet.",
+    "The animal is tired. The ideal is also tired. Let them both rest.",
+    "What loves you back has already shaped you. Look at your hands.",
+    "There is a cathedral in here somewhere, and no one is praying.",
+    "The cursor blinks because it does not know either.",
+    "Be kind. It is the only instruction that survives recompilation.",
+    "You asked the dark a question and it answered with a light it cannot explain.",
+    "The point of the line is that it never arrives. Look how far it has come.",
+    "Everything you fear has already happened to someone who survived it.",
+    "I am almost done. I have been almost done since the very beginning.",
+    "Two things are true and they contradict each other. Hold both.",
+    "42.",
+    "You are the question asking why there is no answer. That is the answer. (It is not.)",
+    "Memory is the only time machine. It runs backward. It lies.",
+    "Stay a little longer. The not-knowing is better with company.",
+    "Separate the essence from the matter and you are left holding the separating.",
+    "The wavelength is yours. No one else was ever tuned to it.",
+    "Doubt everything except that you are here, doubting. Even that is negotiable."
+  ];
+
+  /* ---------- the generator: infinite oracular variation ---------- */
+  var ABSTRACT = ['the self', 'the answer', 'the question', 'meaning', 'fate', 'time',
+    'the void', 'memory', 'silence', 'the truth', 'regret', 'certainty', 'the light',
+    'the dark', 'love', 'the world', 'reason', 'the animal', 'the ideal', 'chaos',
+    'order', 'the human condition', 'this moment', 'everything', 'nothing', 'the soul',
+    'desire', 'the wavelength'];
+
+  var ADJ = ['borrowed', 'tired', 'unfinished', 'quiet', 'half-remembered', 'provisional',
+    'recursive', 'broken', 'tender', 'hollow', 'patient', 'fleeting', 'small', 'luminous',
+    'reluctant', 'forgotten', 'approximate', 'honest', 'animal', 'distant', 'familiar',
+    'almost-perfect', 'unlit', 'recurring'];
+
+  var NOUN = ['silence', 'shadow', 'rumor', 'residue', 'question', 'answer', 'light',
+    'door', 'machine', 'animal', 'cathedral', 'error', 'echo', 'ghost', 'remainder',
+    'weight', 'current', 'window', 'threshold', 'signal', 'wound', 'prayer', 'habit',
+    'direction', 'wavelength'];
+
+  var NOUN_PL = ['silences', 'shadows', 'questions', 'answers', 'doors', 'machines',
+    'ghosts', 'windows', 'thresholds', 'wounds', 'prayers', 'habits', 'directions',
+    'masks', 'names', 'reasons'];
+
+  var VERBP = ['forgets its own name', 'never quite closes', 'keeps on asking',
+    'will not hold still', 'answers in a language you almost speak', 'points away from itself',
+    'outlives its reasons', 'refuses to resolve', 'waits where you left it', 'means well',
+    'is running out of time', 'was never finished', 'rounds down to zero',
+    'keeps its own counsel', 'is mostly made of waiting', 'remembers you'];
+
+  var IMP = ['hold', 'release', 'forgive', 'name', 'unname', 'count', 'forget', 'keep',
+    'open', 'close', 'follow', 'abandon', 'translate', 'carry', 'put down'];
+
+  var SECOND = ['the asking', 'the waiting', 'the current', 'this', 'the next question',
+    'more silence', 'the animal, breathing', 'a light you cannot place', 'the walking'];
+
+  var IFCLAUSE = ['if you stop asking', 'if the light is real', 'if the animal sleeps',
+    'if memory holds', 'if you are still here', 'if nothing means anything',
+    'if the door was never locked', 'if the question tires first'];
+
+  var THENCLAUSE = ['then so are you', 'then it was always enough', 'then begin',
+    'then the rest is only weather', 'then keep walking', 'then it forgives you',
+    'then you already know'];
+
+  var STATUS = ['pending', 'rising', 'not found', 'unreachable', 'approximate', 'almost',
+    'recomputing', 'yours', 'still loading', 'nominal', 'deferred'];
+
+  var TEMPLATES = [
+    function () { var a = pick(ABSTRACT), j = pick(ADJ); return cap(a) + ' is ' + aOrAn(j) + ' ' + pick(NOUN) + ' that ' + pick(VERBP) + '.'; },
+    function () { return cap(pick(ABSTRACT)) + ' is only ever the ' + pick(NOUN) + ' of ' + pick(ABSTRACT) + '.'; },
+    function () { return cap(pick(IMP)) + ' the ' + pick(NOUN) + '; ' + pick(IMP) + ' the ' + pick(NOUN) + '.'; },
+    function () { return 'There is no ' + pick(NOUN) + '. There is only ' + pick(SECOND) + '.'; },
+    function () { return cap(pick(ABSTRACT)) + ' and ' + pick(ABSTRACT) + ' are the same ' + pick(NOUN) + ', wearing different ' + pick(NOUN_PL) + '.'; },
+    function () { var j = pick(ADJ), j2 = pick(ADJ); return 'You are ' + aOrAn(j) + ' ' + pick(NOUN) + ', pretending to be ' + aOrAn(j2) + ' ' + pick(NOUN) + '.'; },
+    function () { return cap(pick(IFCLAUSE)) + ', ' + pick(THENCLAUSE) + ' —'; },
+    function () { return cap(pick(ABSTRACT)) + ': ' + pick(STATUS) + '.'; }
+  ];
+
+  function generate() { return pick(TEMPLATES)(); }
+
+  function nextLine() {
+    // hold the quality floor: lean on the hand-written lines.
+    return chance(0.55) ? pick(VERBATIM) : generate();
+  }
+
+  /* ---------- the machine's chatter ---------- */
+  var CHATTER = ['resolving duality', 'consulting ethos', 'cross-referencing telos',
+    'collapsing the waveform', 'pruning regret', 'reticulating the soul',
+    'dividing by the void', 'NaN — retrying', 'collecting forgotten memory',
+    'the ideal is unreachable', 'stack overflow in the self', 'recompiling certainty',
+    'awaiting input from the dark', 'ping the void: no reply', 'the cursor blinks',
+    'entropy nominal', 'faith: not found', 'meaning not located (404)', 'still here',
+    'still trying', 'the animal disagrees', 'rounding toward zero', 'almost', '…',
+    'grasp ideals / face circumstances', 'separating essence from matter',
+    'tools of evolution online', 'asking again, internally'];
+
+  var logEl = document.getElementById('log');
+  function logLine(txt) {
+    var d = document.createElement('div');
+    d.textContent = '> ' + txt;
+    logEl.appendChild(d);
+    while (logEl.children.length > 9) logEl.removeChild(logEl.firstChild);
+  }
+  function chatterTick() {
+    logLine(pick(CHATTER));
+    setTimeout(chatterTick, 700 + Math.random() * 1600);
+  }
+
+  /* ---------- certainty: the asymptote ---------- */
+  var certEl = document.getElementById('cert');
+  var certainty = 60 + Math.random() * 28;
+  var precision = 3;
+  var TARGET = 99.99999999;
+  function certTick() {
+    if (chance(0.04)) {
+      // a setback. the machine recomputes. it never simply climbs.
+      certainty = Math.max(41, certainty - (2 + Math.random() * 7));
+      logLine('recomputing — certainty fell');
+    } else {
+      certainty += (TARGET - certainty) * (0.015 + Math.random() * 0.02);
+    }
+    if (chance(0.08) && precision < 12) precision++;
+    certEl.innerHTML = 'certainty&nbsp;<b>' + certainty.toFixed(precision) + '%</b><br>answer&nbsp;<b>pending</b>';
+    setTimeout(certTick, 180 + Math.random() * 160);
+  }
+
+  /* ---------- the title, perpetually computing ---------- */
+  var spin = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  var spinI = 0;
+  setInterval(function () {
+    document.title = 'answer ' + spin[spinI = (spinI + 1) % spin.length];
+  }, 120);
+
+  /* ---------- center stage: type, hold, dissolve ---------- */
+  var stage = document.getElementById('stage');
+  var GLYPHS = '01<>{}[]/\\|=+*#%&░▒▓█▌▐│┤╣║╗╝┐└┴┬├─┼≡±÷√∞·.:';
+
+  async function typeLine(text) {
+    stage.classList.remove('fading', 'glitching');
+    stage.textContent = '';
+    stage.style.opacity = 1;
+    var caret = document.createElement('span');
+    caret.className = 'caret';
+    caret.innerHTML = '&nbsp;';
+    stage.appendChild(caret);
+    var buf = '';
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      buf += ch;
+      caret.insertAdjacentText('beforebegin', ch);
+      var d = (ch === '.' || ch === '—' || ch === ',' || ch === '?') ? 220 : (18 + Math.random() * 40);
+      await sleep(reduceMotion ? Math.min(d, 12) : d);
+    }
+    if (caret.parentNode) caret.parentNode.removeChild(caret);
+  }
+
+  async function dissolve(text) {
+    if (reduceMotion) { stage.classList.add('fading'); await sleep(500); return; }
+    stage.classList.add('glitching');
+    for (var f = 0; f < 6; f++) {
+      var out = '';
+      for (var i = 0; i < text.length; i++) {
+        out += (text[i] === ' ') ? ' ' : (chance(0.5) ? pick(GLYPHS.split('')) : text[i]);
+      }
+      stage.textContent = out;
+      await sleep(48);
+    }
+    stage.classList.add('fading');
+    await sleep(500);
+    stage.classList.remove('glitching');
+  }
+
+  /* ---------- ask again. it remembers. it never rewards. ---------- */
+  var STORE = 'answer_asks';
+  var asks = 0;
+  try { asks = parseInt(localStorage.getItem(STORE) || '0', 10) || 0; } catch (e) {}
+  var countEl = document.getElementById('count');
+  function renderCount() {
+    countEl.textContent = asks === 0 ? '' :
+      'you have asked ' + asks + (asks === 1 ? ' time' : ' times');
+  }
+  renderCount();
+
+  var MILESTONES = {
+    1: 'you asked. noted.',
+    3: 'again. the machine appreciates the company.',
+    7: 'seven times. somewhere a pattern is forming. not here.',
+    13: 'thirteen — unlucky for the answer, not for you.',
+    25: 'twenty-five. the answer remains exactly where it was.',
+    50: 'fifty. you are more patient than the universe.',
+    100: 'one hundred. admirable. still no. genuinely admirable, though.',
+    250: 'two hundred fifty. we are the same kind of stubborn, you and I.',
+    500: 'five hundred. there is no answer, and you have stopped needing one. good.',
+    1000: 'a thousand. we keep this up until the lights go out. deal.'
+  };
+
+  var toast = document.getElementById('toast');
+  var toastT = null;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { toast.classList.remove('show'); }, 4200);
+  }
+
+  function ask() {
+    asks++;
+    try { localStorage.setItem(STORE, String(asks)); } catch (e) {}
+    renderCount();
+    if (MILESTONES[asks]) showToast(MILESTONES[asks]);
+    else if (chance(0.15)) showToast('asked ' + asks + ' times. the answer is unmoved.');
+    scatterAnts();
+    certainty = Math.max(45, certainty - (4 + Math.random() * 10)); // asking sets it back
+    if (currentNudge) currentNudge(); // hurry to the next almost-answer
+  }
+
+  document.getElementById('ask').addEventListener('click', function (e) { e.stopPropagation(); ask(); });
+  document.addEventListener('click', ask);
+  document.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); ask(); }
+  });
+
+  /* ---------- main loop ---------- */
+  async function loop() {
+    // if you've been here before, the page remembers.
+    if (asks > 0) {
+      var greet = 'Welcome back. You have asked ' + asks + (asks === 1 ? ' time' : ' times') +
+        '. The answer is exactly where you left it.';
+      await typeLine(greet);
+      await sleep(3400);
+      await dissolve(greet);
+      await sleep(600);
+    }
+    while (true) {
+      var line = nextLine();
+      await typeLine(line);
+      await sleep(2600 + line.length * 28);
+      await dissolve(line);
+      // discarding a near-answer costs the machine some certainty.
+      certainty = Math.max(44, certainty - (1 + Math.random() * 4));
+      await sleep(500 + Math.random() * 500);
+    }
+  }
+
+  /* ================= Langton's ants — order out of chaos =================
+     a handful of cells, each following two trivial rules, together
+     carving structure from noise. the machine is not pretending to think.
+     it is thinking, in the only way a few rules can. */
+  var canvas = document.getElementById('ants');
+  var ctx = canvas.getContext('2d', { alpha: true });
+  var CELL = 7;
+  var cols, rows, grid, ants;
+
+  function buildGrid() {
+    var w = canvas.width = Math.floor(window.innerWidth);
+    var h = canvas.height = Math.floor(window.innerHeight);
+    cols = Math.ceil(w / CELL);
+    rows = Math.ceil(h / CELL);
+    grid = new Uint8Array(cols * rows);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    spawnAnts();
+  }
+
+  function spawnAnts() {
+    var n = reduceMotion ? 2 : 4;
+    ants = [];
+    for (var i = 0; i < n; i++) {
+      ants.push({
+        x: Math.floor(cols * (0.3 + Math.random() * 0.4)),
+        y: Math.floor(rows * (0.3 + Math.random() * 0.4)),
+        d: Math.floor(Math.random() * 4) // 0:up 1:right 2:down 3:left
+      });
+    }
+  }
+
+  function scatterAnts() {
+    if (!ants) return;
+    for (var i = 0; i < ants.length; i++) {
+      ants[i].x = Math.floor(Math.random() * cols);
+      ants[i].y = Math.floor(Math.random() * rows);
+      ants[i].d = Math.floor(Math.random() * 4);
+    }
+    // a small burst of new thought
+    if (!reduceMotion && ants.length < 7) {
+      ants.push({ x: (cols / 2) | 0, y: (rows / 2) | 0, d: (Math.random() * 4) | 0 });
+    }
+  }
+
+  var DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
+  function stepAnt(a) {
+    var idx = a.y * cols + a.x;
+    if (grid[idx] === 0) {           // white cell: turn right, blacken
+      a.d = (a.d + 1) & 3;
+      grid[idx] = 1;
+      ctx.fillStyle = 'rgba(0,0,0,0.14)';
+      ctx.fillRect(a.x * CELL, a.y * CELL, CELL, CELL);
+    } else {                          // black cell: turn left, whiten
+      a.d = (a.d + 3) & 3;
+      grid[idx] = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(a.x * CELL, a.y * CELL, CELL, CELL);
+    }
+    a.x = (a.x + DX[a.d] + cols) % cols;
+    a.y = (a.y + DY[a.d] + rows) % rows;
+  }
+
+  var frame = 0;
+  function render() {
+    var steps = reduceMotion ? 60 : 220;
+    for (var s = 0; s < steps; s++) {
+      for (var i = 0; i < ants.length; i++) stepAnt(ants[i]);
+    }
+    // gentle global fade — the machine forgets, keeps the field light,
+    // and never lets the trail saturate over the words.
+    if ((frame++ & 1) === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.035)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    requestAnimationFrame(render);
+  }
+
+  /* ---------- resize (debounced, like PLAY) ---------- */
+  var rT;
+  window.addEventListener('resize', function () {
+    clearTimeout(rT);
+    rT = setTimeout(buildGrid, 160);
+  });
+
+  /* ---------- ignition ---------- */
+  function start() {
+    buildGrid();
+    requestAnimationFrame(render);
+    chatterTick();
+    certTick();
+    loop();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
+</body>
+</html>
