@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CACOPHONY</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: radial-gradient(ellipse at 50% 50%, #0a0515 0%, #000000 100%);
+  color: #ffffff;
+  font-family: monospace;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#container {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#visualizer {
+  width: 100%;
+  height: 300px;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+#visualizer.active {
+  opacity: 1;
+}
+
+#play-btn {
+  position: relative;
+  z-index: 10;
+  background: transparent;
+  border: 2px solid #FF1E36;
+  color: #FF1E36;
+  font-family: monospace;
+  font-size: 1.5rem;
+  padding: 1rem 3rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  transition: all 0.3s ease;
+}
+
+#play-btn:hover {
+  background: #FF1E36;
+  color: #000000;
+  box-shadow: 0 0 20px rgba(255, 30, 54, 0.5);
+}
+
+#play-btn:active {
+  transform: scale(0.95);
+}
+
+#play-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#text-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+  padding: 2rem;
+}
+
+.fragment {
+  position: absolute;
+  font-size: clamp(1rem, 3vw, 2rem);
+  opacity: 0;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 10px rgba(100, 150, 255, 0.6);
+  white-space: nowrap;
+  max-width: 90%;
+  word-wrap: break-word;
+}
+
+.fragment.visible {
+  animation: flicker 0.3s ease-in-out;
+  opacity: 0.85;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 0; }
+  10% { opacity: 0.3; }
+  20% { opacity: 0; }
+  30% { opacity: 0.9; }
+  40% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+#back-link {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #666;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+#back-link:hover {
+  color: #FF1E36;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fragment.visible {
+    animation: none;
+    opacity: 0.85;
+  }
+  #play-btn {
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #container {
+    height: 300px;
+  }
+  #visualizer {
+    height: 200px;
+  }
+  #play-btn {
+    font-size: 1.2rem;
+    padding: 0.8rem 2rem;
+  }
+}
+</style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="visualizer"></canvas>
+    <button id="play-btn">▶ Begin</button>
+    <div id="text-overlay"></div>
+  </div>
+  <a id="back-link" href="index.html">← return</a>
+
+  <script>
+    // Text fragments from the creation myth
+    const FRAGMENTS = [
+      "the first observer",
+      "ascertained all of the old world",
+      "sailed across the great unknown",
+      "beasts of the depths",
+      "voice and blade",
+      "a thousand thundering truths",
+      "a thousand flaming blows",
+      "ancient beings laid torn",
+      "from their remains",
+      "he made a new world",
+      "CACOPHONY"
+    ];
+
+    let audioContext;
+    let analyser;
+    let dataArray;
+    let bufferLength;
+    let animationId;
+    let audio;
+    let fragmentElements = [];
+    let lastFragmentTime = 0;
+    let fragmentIndex = 0;
+
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+    const playBtn = document.getElementById('play-btn');
+    const textOverlay = document.getElementById('text-overlay');
+
+    // Set canvas size
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Create fragment elements
+    FRAGMENTS.forEach((text) => {
+      const frag = document.createElement('div');
+      frag.className = 'fragment';
+      frag.textContent = text;
+      textOverlay.appendChild(frag);
+      fragmentElements.push(frag);
+    });
+
+    playBtn.addEventListener('click', async () => {
+      if (!audioContext) {
+        // Initialize Web Audio API
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512;
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+
+        // Create and connect audio element
+        audio = new Audio('files/CACOPHONY.mp3');
+        const source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        audio.addEventListener('ended', () => {
+          cancelAnimationFrame(animationId);
+          setTimeout(() => {
+            playBtn.classList.remove('hidden');
+            playBtn.textContent = '▶ Again';
+            canvas.classList.remove('active');
+            fragmentElements.forEach(f => f.classList.remove('visible'));
+          }, 500);
+        });
+      }
+
+      // Start playback
+      playBtn.classList.add('hidden');
+      canvas.classList.add('active');
+      audio.currentTime = 0;
+      audio.play();
+      fragmentIndex = 0;
+      lastFragmentTime = 0;
+      visualize();
+    });
+
+    function visualize() {
+      animationId = requestAnimationFrame(visualize);
+      analyser.getByteFrequencyData(dataArray);
+
+      // Clear canvas
+      ctx.fillStyle = 'rgba(10, 5, 21, 0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw frequency bars
+      const barWidth = (canvas.width / bufferLength) * 2.5;
+      let barHeight;
+      let x = 0;
+
+      // Calculate average volume for fragment triggering
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i];
+      }
+      const avgVolume = sum / bufferLength;
+
+      for (let i = 0; i < bufferLength; i++) {
+        barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
+
+        // Color gradient based on frequency
+        const hue = (i / bufferLength) * 60 + 200; // Blue to purple range
+        const saturation = 70 + (dataArray[i] / 255) * 30;
+        const lightness = 40 + (dataArray[i] / 255) * 20;
+
+        ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+        // Add red accent for peaks
+        if (dataArray[i] > 180) {
+          ctx.fillStyle = '#FF1E36';
+        }
+
+        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 1;
+      }
+
+      // Trigger text fragments on audio peaks
+      const now = Date.now();
+      if (avgVolume > 50 && now - lastFragmentTime > 800 && fragmentIndex < fragmentElements.length) {
+        // Hide previous fragment
+        if (fragmentIndex > 0) {
+          fragmentElements[fragmentIndex - 1].classList.remove('visible');
+        }
+
+        // Show new fragment
+        const frag = fragmentElements[fragmentIndex];
+        frag.style.top = `${20 + Math.random() * 60}%`;
+        frag.style.left = `${10 + Math.random() * 80}%`;
+        frag.classList.add('visible');
+
+        fragmentIndex++;
+        lastFragmentTime = now;
+
+        // Remove visibility after a delay
+        setTimeout(() => {
+          frag.classList.remove('visible');
+        }, 2000 + Math.random() * 1000);
+      }
+    }
+
+    // Fallback for reduced motion - static display
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      playBtn.addEventListener('click', () => {
+        // Show all fragments as static text
+        fragmentElements.forEach((frag, i) => {
+          setTimeout(() => {
+            frag.style.top = `${20 + (i % 3) * 30}%`;
+            frag.style.left = `${10 + (i % 4) * 25}%`;
+            frag.classList.add('visible');
+          }, i * 200);
+        });
+      }, { once: true });
+    }
+  </script>
+</body>
+</html>
