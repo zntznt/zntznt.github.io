@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1" name="viewport">
@@ -69,14 +69,27 @@ tw-passage {
 */
 tw-story[tags="memory"] {
 	font-family: 'Gloria Hallelujah', cursive;
-  	background-image: url("https://source.unsplash.com/Y3vPEuNlf7w/1920x1080");
+  	/* memory: soft warm bokeh — layered radials with a faint conic shimmer drifting through */
+  	background-image:
+  		radial-gradient(circle at 18% 22%, rgba(255, 228, 181, 0.75), transparent 40%),
+  		radial-gradient(circle at 82% 28%, rgba(255, 206, 214, 0.55), transparent 45%),
+  		radial-gradient(circle at 60% 85%, rgba(210, 232, 220, 0.6), transparent 50%),
+  		radial-gradient(circle at 38% 58%, rgba(255, 240, 200, 0.45), transparent 60%),
+  		conic-gradient(from 210deg at 50% 50%, rgba(255, 220, 190, 0.18), rgba(245, 235, 200, 0) 40%, rgba(230, 210, 230, 0.18) 70%, rgba(255, 220, 190, 0) 100%);
+  	background-attachment: fixed;
 	background-color: #f7f2c6;
 	color: #425055;
 }
 tw-story[tags="dirt"] {
 	font-family: 'New Rocker', cursive;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/Wr2Ss0fdeWU/1920x1080");
-	background-color: #9b7653;
+    /* dirt: mottled earth — repeating-radial speckle and a conic clod of shadow over warm radials */
+    background-image:
+    	radial-gradient(circle at 20% 22%, rgba(120, 85, 50, 0.6), transparent 40%),
+    	radial-gradient(circle at 75% 65%, rgba(54, 38, 22, 0.7), transparent 45%),
+    	repeating-radial-gradient(circle at 40% 40%, rgba(70, 50, 30, 0.15) 0, rgba(70, 50, 30, 0.15) 8px, transparent 8px, transparent 22px),
+    	conic-gradient(from 90deg at 30% 70%, rgba(90, 65, 38, 0.3), rgba(60, 42, 25, 0.1) 50%, rgba(110, 80, 48, 0.3));
+    background-attachment: fixed;
+	background-color: #7a5a38;
 	color: #dfdac7;
 }
 [tags="idle"] {
@@ -85,41 +98,125 @@ tw-story[tags="dirt"] {
 	color: #ffffff;
 }
 tw-story[tags="stars"] {
- 	background-image: url("https://source.unsplash.com/4aphqBYyZsA/1920x1080");
+ 	/* stars: a hand-scattered starfield (many tiny radials) under a conic galactic haze */
+ 	background-image:
+ 		radial-gradient(1px 1px at 12% 22%, #ffffff, transparent),
+ 		radial-gradient(1px 1px at 28% 67%, rgba(255, 255, 255, 0.8), transparent),
+ 		radial-gradient(2px 2px at 45% 15%, #ffffff, transparent),
+ 		radial-gradient(1px 1px at 62% 48%, rgba(255, 255, 255, 0.7), transparent),
+ 		radial-gradient(1px 1px at 78% 33%, #ffffff, transparent),
+ 		radial-gradient(2px 2px at 88% 72%, rgba(255, 255, 255, 0.9), transparent),
+ 		radial-gradient(1px 1px at 55% 82%, rgba(255, 255, 255, 0.6), transparent),
+ 		radial-gradient(1px 1px at 35% 40%, #ffffff, transparent),
+ 		radial-gradient(1.5px 1.5px at 8% 80%, #ffffff, transparent),
+ 		radial-gradient(1px 1px at 92% 12%, rgba(255, 255, 255, 0.7), transparent),
+ 		conic-gradient(from 200deg at 70% 30%, rgba(70, 90, 160, 0.25), transparent 30%, rgba(120, 70, 140, 0.2) 60%, transparent),
+ 		radial-gradient(ellipse at 50% 50%, rgba(20, 28, 60, 0.5), #04060f 80%);
+ 	background-attachment: fixed;
+	background-color: #04060f;
 }
 tw-story[tags="universe"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/pCcGpVsOHoo/1920x1080");
+ 	/* universe: a conic nebula swirl with a bright stellar core, edges drowned in void */
+ 	background-image:
+ 		conic-gradient(from 120deg at 40% 45%, rgba(150, 60, 200, 0.5), rgba(40, 90, 200, 0.4) 25%, rgba(220, 90, 160, 0.35) 50%, rgba(60, 40, 160, 0.45) 75%, rgba(150, 60, 200, 0.5)),
+ 		radial-gradient(circle at 60% 40%, rgba(255, 240, 210, 0.65), transparent 12%),
+ 		radial-gradient(circle at 30% 70%, rgba(120, 40, 180, 0.4), transparent 45%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 30%, #05030f 85%);
+ 	background-attachment: fixed;
+	background-color: #05030f;
 }
 tw-story[tags="crossroad"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/pHwWbdQrmEs/1920x1080");
+ 	/* crossroad: conic wedges fanning up from a single point — diverging paths, lit at the fork */
+ 	background-image:
+ 		conic-gradient(from 180deg at 50% 100%, rgba(200, 180, 130, 0.18) 0deg, transparent 20deg, transparent 60deg, rgba(200, 180, 130, 0.14) 80deg, transparent 100deg, transparent 140deg, rgba(200, 180, 130, 0.18) 160deg, transparent 180deg),
+ 		radial-gradient(circle at 50% 100%, rgba(230, 210, 160, 0.4), transparent 40%),
+ 		radial-gradient(ellipse at 50% 30%, rgba(30, 30, 40, 0.6), #0e0e14 90%);
+ 	background-attachment: fixed;
+	background-color: #0e0e14;
 }
 tw-story[tags="blood"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/lhnOvu72BM8/1920x1080");
+ 	/* blood: repeating-radial ripples spreading from a wound, sinking into near-black */
+ 	background-image:
+ 		repeating-radial-gradient(circle at 50% 42%, rgba(120, 18, 18, 0.4) 0, rgba(120, 18, 18, 0.4) 2px, transparent 2px, transparent 40px),
+ 		radial-gradient(circle at 50% 42%, rgba(150, 24, 24, 0.6), transparent 55%),
+ 		radial-gradient(circle at 20% 85%, rgba(70, 6, 6, 0.6), transparent 45%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 20%, #0a0202 85%);
+ 	background-attachment: fixed;
+	background-color: #150404;
 	color: #edece6;
 }
 tw-story[tags="power"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/8RT8fr3Kzt4/1920x1080");
+ 	/* power: a repeating-conic sunburst of rays firing from a hot core */
+ 	background-image:
+ 		repeating-conic-gradient(from 0deg at 50% 45%, rgba(90, 190, 255, 0.35) 0deg, rgba(90, 190, 255, 0.35) 4deg, transparent 4deg, transparent 14deg),
+ 		radial-gradient(circle at 50% 45%, rgba(255, 230, 120, 0.5), transparent 35%),
+ 		radial-gradient(circle at 50% 45%, rgba(120, 220, 255, 0.4), transparent 55%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 25%, #060a14 88%);
+ 	background-attachment: fixed;
+	background-color: #060a14;
 	color: #edece6;
 }
 tw-story[tags="over"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/1L71sPT5XKc/1920x1080");
+ 	/* over: a vignette closing in from all sides, one last ember glowing at the bottom */
+ 	background-image:
+ 		radial-gradient(ellipse at 50% 115%, rgba(190, 95, 45, 0.45), transparent 45%),
+ 		radial-gradient(circle at 50% 100%, rgba(120, 50, 30, 0.35), transparent 40%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 0%, transparent 25%, rgba(0, 0, 0, 0.85) 75%);
+ 	background-attachment: fixed;
+	background-color: #050404;
 }
 tw-story[tags="rot"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/BmAOtpBZpMk/1920x1080");
+ 	/* rot: two repeating-radial spore fields at different scales, sickly green over decay */
+ 	background-image:
+ 		repeating-radial-gradient(circle at 30% 35%, rgba(90, 110, 40, 0.18) 0, rgba(90, 110, 40, 0.18) 6px, transparent 6px, transparent 26px),
+ 		repeating-radial-gradient(circle at 70% 65%, rgba(70, 80, 30, 0.16) 0, rgba(70, 80, 30, 0.16) 10px, transparent 10px, transparent 34px),
+ 		radial-gradient(circle at 55% 45%, rgba(110, 90, 50, 0.35), transparent 40%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 30%, #080a06 88%);
+ 	background-attachment: fixed;
+	background-color: #0d100a;
 }
 tw-story[tags="crowd"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/sUXXO3xPBYo/1920x1080");
+ 	/* crowd: a row of faceless heads rising along the bottom, faint vertical bodies behind */
+ 	background-image:
+ 		radial-gradient(circle at 15% 105%, rgba(60, 60, 80, 0.55), transparent 16%),
+ 		radial-gradient(circle at 32% 108%, rgba(50, 50, 70, 0.55), transparent 14%),
+ 		radial-gradient(circle at 50% 104%, rgba(68, 68, 88, 0.55), transparent 18%),
+ 		radial-gradient(circle at 68% 108%, rgba(48, 48, 68, 0.55), transparent 14%),
+ 		radial-gradient(circle at 85% 105%, rgba(58, 58, 78, 0.55), transparent 16%),
+ 		repeating-linear-gradient(90deg, transparent 0, transparent 38px, rgba(40, 40, 55, 0.12) 38px, rgba(40, 40, 55, 0.12) 40px),
+ 		radial-gradient(ellipse at 50% 30%, rgba(28, 28, 38, 0.5), #0c0c10 90%);
+ 	background-attachment: fixed;
+	background-color: #0c0c10;
 }
 tw-story[tags="create"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/lQT_bOWtysE/1920x1080");
+ 	/* create: a full-spectrum conic burst with a white-hot center — pure generative energy */
+ 	background-image:
+ 		conic-gradient(from 0deg at 50% 50%, rgba(255, 100, 150, 0.5), rgba(255, 200, 80, 0.5) 20%, rgba(120, 255, 140, 0.5) 40%, rgba(80, 200, 255, 0.5) 60%, rgba(180, 120, 255, 0.5) 80%, rgba(255, 100, 150, 0.5)),
+ 		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.4), transparent 20%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 35%, #0a0612 90%);
+ 	background-attachment: fixed;
+	background-color: #0a0612;
 }
 tw-story[tags="data"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://source.unsplash.com/qjnAnF0jIGk/1920x1080");
+ 	/* data: CRT scanlines plus a faint terminal grid, green phosphor glow bleeding from the top */
+ 	background-image:
+ 		repeating-linear-gradient(0deg, rgba(0, 40, 0, 0.3) 0, rgba(0, 40, 0, 0.3) 1px, transparent 1px, transparent 4px),
+ 		repeating-linear-gradient(90deg, rgba(0, 60, 0, 0.12) 0, rgba(0, 60, 0, 0.12) 1px, transparent 1px, transparent 28px),
+ 		radial-gradient(ellipse at 50% 25%, rgba(40, 180, 30, 0.3), transparent 55%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 40%, #020602 90%);
+ 	background-attachment: fixed;
+	background-color: #020602;
  	font-family: 'VT323', monospace;
 	color: #63b521;
 }
 tw-story[tags="cathedral"] {
- 	background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url("https://source.unsplash.com/lrWj0LRCCLY/1920x1080");
+ 	/* cathedral: repeating-conic god-rays slanting down from a high window, warm light above */
+ 	background-image:
+ 		repeating-conic-gradient(from 250deg at 50% -10%, rgba(255, 228, 160, 0.10) 0deg, rgba(255, 228, 160, 0.10) 3deg, transparent 3deg, transparent 11deg),
+ 		radial-gradient(ellipse at 50% 0%, rgba(255, 220, 150, 0.5), transparent 45%),
+ 		radial-gradient(ellipse at 50% 50%, transparent 25%, #020207 88%);
+ 	background-attachment: fixed;
+	background-color: #05040a;
  	font-family: 'Marcellus', serif;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-tag name="Bag" color="red"></tw-tag>,<tw-tag name="blood" color="red"></tw-tag>,<tw-tag name="cathedral" color="yellow"></tw-tag>,<tw-tag name="create" color="yellow"></tw-tag>,<tw-tag name="crossroad" color="yellow"></tw-tag>,<tw-tag name="crowd" color="yellow"></tw-tag>,<tw-tag name="data" color="yellow"></tw-tag>,<tw-tag name="dirt" color="yellow"></tw-tag>,<tw-tag name="footer" color="purple"></tw-tag>,<tw-tag name="idle" color="yellow"></tw-tag>,<tw-tag name="memory" color="purple"></tw-tag>,<tw-tag name="over" color="yellow"></tw-tag>,<tw-tag name="power" color="red"></tw-tag>,<tw-tag name="rot" color="yellow"></tw-tag>,<tw-tag name="stars" color="yellow"></tw-tag>,<tw-tag name="universe" color="yellow"></tw-tag><tw-passagedata pid="1" name="Stars" tags="stars" position="2071,1311" size="100,100">A long stroke of stars paints the dark sky.
 Below, only a small candle illuminates the [[dirt]] in the ground.
