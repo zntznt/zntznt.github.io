@@ -23,11 +23,14 @@ body {
   text-align: center;
   font-family: 'Press Start 2P', monospace;
   font-weight: 700;
-  font-size: 3em;
+  font-size: clamp(1rem, 5vw, 3em);
   -webkit-font-smoothing : none;
 }
 .flex {
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  padding: 5vw;
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
@@ -56,12 +59,6 @@ function randomize() {
   document.title = "I LIKE " + alternative;
 }
 randomize();
-</script>
-<script type="text/javascript">
-document.addEventListener("DOMContentLoaded", function()
-{
-document.querySelector("#time").innerHTML = new Date().toString();
-});
 </script>
 </body>
 </html>
