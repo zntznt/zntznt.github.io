@@ -7,7 +7,7 @@
 <meta name="description" content="A creation myth, narrated from the noise — chaos pulled into a world, and the question that outlasts it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Spectral:ital@1&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Spectral:ital@1&display=swap" rel="stylesheet">
 <style>
 * {
   margin: 0;
@@ -139,7 +139,8 @@ body {
   pointer-events: auto;
   position: fixed;
   bottom: 1.8rem;
-  left: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 3;
   color: rgba(243, 240, 234, 0.32);
   text-decoration: none;
@@ -152,32 +153,6 @@ body {
 
 #back-link:hover {
   color: #ff5566;
-}
-
-#duality-link {
-  pointer-events: auto;
-  position: fixed;
-  bottom: 1.6rem;
-  right: 2rem;
-  z-index: 3;
-  color: #E4A71E;
-  text-decoration: none;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
-  text-shadow: 0 0 8px rgba(228, 167, 30, 0.4);
-  transition: color 0.4s ease, text-shadow 0.4s ease;
-  -webkit-font-smoothing: none;
-}
-
-#duality-link:hover {
-  color: #ffcc55;
-  text-shadow: 0 0 14px rgba(228, 167, 30, 0.8);
-}
-
-@media (max-width: 640px) {
-  #back-link { left: 1rem; font-size: 0.85rem; }
-  #duality-link { right: 1rem; font-size: 0.55rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -196,15 +171,10 @@ body {
   </div>
 
   <a id="back-link" href="index.html">return</a>
-  <a id="duality-link" href="DUALITY.html"></a>
 
   <script>
   (function () {
     "use strict";
-
-    // Small set of cosmic/creation-themed likes for the DUALITY link
-    var LIKES = ['CREATION MYTHS', 'COSMIC NOISE', 'THE VOID', 'ANCIENT TEXTS', 'QUESTIONS', 'THE DEEP'];
-    document.getElementById('duality-link').textContent = 'I LIKE ' + LIKES[Math.floor(Math.random() * LIKES.length)];
 
     /* ----------------------------------------------------------------------
        THE SCORE

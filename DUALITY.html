@@ -47,10 +47,47 @@ body {
 ::selection {
   background: darkorange;
 }
+
+.nav-link {
+  position: fixed;
+  bottom: 1.2rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: rgba(228, 167, 30, 0.5);
+  text-decoration: none;
+  text-shadow: 0 0 6px rgba(228, 167, 30, 0.3);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+  z-index: 100;
+  -webkit-font-smoothing: none;
+}
+
+.nav-link:hover {
+  color: #E4A71E;
+  text-shadow: 0 0 12px rgba(228, 167, 30, 0.6);
+}
+
+.nav-link.left {
+  left: 1.2rem;
+}
+
+.nav-link.right {
+  right: 1.2rem;
+}
+
+@media (max-width: 640px) {
+  .nav-link {
+    font-size: 0.5rem;
+    bottom: 1rem;
+  }
+  .nav-link.left { left: 0.8rem; }
+  .nav-link.right { right: 0.8rem; }
+}
 </style>
 </head>
 <body onclick="history.go(0);">
 <div class="flex" id="flex"></div>
+<a class="nav-link left" href="index.html" onclick="event.stopPropagation();">← RETURN</a>
+<a class="nav-link right" href="CACOPHONY.html" onclick="event.stopPropagation();">CACOPHONY →</a>
 <script src="files/like.js"></script>
 <script>
 function randomize() {
