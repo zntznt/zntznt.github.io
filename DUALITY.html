@@ -28,6 +28,7 @@ body {
   font-weight: 700;
   font-size: clamp(1rem, 5vw, 3em);
   -webkit-font-smoothing : none;
+  cursor: pointer;
 }
 .flex {
   word-wrap: break-word;
@@ -77,6 +78,29 @@ body {
   right: 1.2rem;
 }
 
+#hint {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: rgba(228, 167, 30, 0.4);
+  text-shadow: 0 0 6px rgba(228, 167, 30, 0.25);
+  animation: pulse 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 99;
+  -webkit-font-smoothing: none;
+  transition: opacity 0.8s ease;
+}
+#hint.hidden {
+  opacity: 0;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
 @media (max-width: 640px) {
   .nav-link {
     font-size: 0.5rem;
@@ -84,18 +108,37 @@ body {
   }
   .nav-link.left { left: 0.8rem; }
   .nav-link.right { right: 0.8rem; }
+  #hint {
+    font-size: 0.4rem;
+    top: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hint {
+    animation: none;
+    opacity: 0.5;
+  }
 }
 </style>
 </head>
-<body onclick="history.go(0);">
+<body onclick="hideHint(); history.go(0);">
+<div id="hint">↻ CLICK TO REROLL</div>
 <div class="flex" id="flex"></div>
 <a class="nav-link left" href="index.html" onclick="event.stopPropagation();">← RETURN</a>
+<a class="nav-link right" href="#" onclick="event.stopPropagation(); hideHint(); history.go(0); return false;">REROLL ↻</a>
 <script src="files/like.js"></script>
 <script>
 function randomize() {
   var alternative = alternatives[Math.floor(Math.random() * alternatives.length)];
   document.getElementById("flex").innerHTML = "I LIKE " + alternative;
   document.title = "I LIKE " + alternative;
+}
+function hideHint() {
+  var hint = document.getElementById("hint");
+  if (hint && !hint.className) {
+    hint.className = "hidden";
+  }
 }
 randomize();
 </script>
