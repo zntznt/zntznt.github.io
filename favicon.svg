@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- λ — the mark on the door. green on the deep purple of the inner box,
+       double-framed like every bordered box on the site. -->
+  <defs>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="#73B036" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="12" fill="#160121"/>
+  <rect x="3.5" y="3.5" width="57" height="57" rx="9.5" fill="none" stroke="#73B036" stroke-width="2"/>
+  <rect x="7" y="7" width="50" height="50" rx="7" fill="none" stroke="#73B036" stroke-width="1" opacity="0.35"/>
+  <g filter="url(#glow)" stroke="#73B036" stroke-width="7" stroke-linecap="round" fill="none">
+    <path d="M21 14 C27 14 29.5 18.5 32.5 26 L43.5 50"/>
+    <path d="M20.5 50 L31 27"/>
+  </g>
+</svg>
