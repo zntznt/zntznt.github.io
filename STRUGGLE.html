@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<!--
+  STRUGGLE — a lonesome struggle against the human condition.
+  A recovered document, forever decaying. Doubt erodes it into noise;
+  questioning (your touch, your attention) restores it.
+  There is no win state. You only ever hold the line.
+  The corruption after "the most convenient lie?" shipped with the file.
+  It is original damage. It cannot be healed. Some truths are already lost.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>struggle</title>
+<meta name="description" content="A recovered document, forever decaying. Doubt erodes; questioning restores. Hold the line.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://zntznt.com/STRUGGLE.html">
+<meta property="og:title" content="struggle">
+<meta property="og:description" content="A recovered document, forever decaying. Doubt erodes; questioning restores. Hold the line.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="struggle">
+<meta name="twitter:description" content="A recovered document, forever decaying. Doubt erodes; questioning restores. Hold the line.">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #160121;
+    min-height: 100%;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'VT323', 'Courier New', monospace;
+    color: #cfd6c3;
+    font-size: 22px;
+    line-height: 1.65;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ---- file viewer chrome ---- */
+  #chrome {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0 1.5em;
+    padding: 0.45em 1em 0.4em;
+    background: rgba(22, 1, 33, 0.93);
+    border-bottom: 1px solid rgba(115, 176, 54, 0.4);
+    color: #73B036;
+    font-size: 0.82em;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  #filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60vw;
+  }
+  #meter.ok   #integrity { color: #73B036; }
+  #meter.warn #integrity { color: #d8c24a; }
+  #meter.bad  #integrity { color: #c4342d; }
+  #status { opacity: 0.8; }
+  #meter.bad #status {
+    color: #c4342d;
+    animation: panic 0.9s steps(2, start) infinite;
+  }
+  @keyframes panic { 50% { opacity: 0.25; } }
+
+  /* ---- the document ---- */
+  #doc {
+    max-width: 33em;
+    margin: 0 auto;
+    padding: 5.5em 1.2em 2em;
+  }
+  #doc p { margin: 0 0 1.4em; }
+  #doc p.title {
+    color: #73B036;
+    margin-bottom: 2.2em;
+  }
+  #doc p.coda { color: #a8c787; }
+  .w { display: inline-block; white-space: pre; }
+
+  /* character decay states */
+  .c {
+    transition: color 0.35s ease, opacity 0.35s ease, text-shadow 0.35s ease;
+  }
+  .c.fading { opacity: 0.5; }
+  .c.rot {
+    color: #574766;
+    opacity: 0.85;
+  }
+  .c.lost {
+    color: #32243f;
+    animation: lostflicker 1.1s steps(2, start) infinite;
+  }
+  @keyframes lostflicker { 50% { opacity: 0.35; } }
+  .c.lock {
+    color: #b9e08a;
+    text-shadow: 0 0 7px rgba(115, 176, 54, 0.55);
+  }
+  /* original damage — shipped corrupted, beyond questioning */
+  .c.perm {
+    color: #6b3340;
+    animation: lostflicker 1.7s steps(2, start) infinite;
+    cursor: not-allowed;
+  }
+
+  /* ---- hint + footer ---- */
+  #hint {
+    text-align: center;
+    color: rgba(115, 176, 54, 0.55);
+    font-size: 0.78em;
+    letter-spacing: 0.1em;
+    padding: 0 1em 1em;
+    transition: opacity 2s ease;
+  }
+  #hint.gone { opacity: 0; }
+  footer {
+    text-align: center;
+    padding: 1em 0 2.5em;
+  }
+  footer a {
+    color: #73B036;
+    text-decoration: none;
+  }
+  footer a:hover { color: #a8d96e; }
+
+  /* ---- CRT dressing ---- */
+  #scan {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg,
+        rgba(0, 0, 0, 0.16) 0px, rgba(0, 0, 0, 0.16) 1px,
+        transparent 1px, transparent 3px),
+      radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
+  }
+
+  @media (max-width: 600px) {
+    body { font-size: 18px; }
+    #doc { padding-top: 6.5em; }
+    #filename { max-width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .c, .c.lost, .c.perm, #meter.bad #status { animation: none; }
+    .c { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="chrome">
+    <span id="filename">/files/STRUGGLE.txt &mdash; RECOVERED DOCUMENT</span>
+    <span id="meter" class="ok">INTEGRITY <span id="integrity">100.0</span>% &mdash; <span id="status">HELD</span></span>
+  </div>
+
+  <main id="doc"></main>
+
+  <div id="hint">doubt erodes. questioning restores. touch the words.</div>
+
+  <footer><a href="index.html">&lt;&lt; back</a></footer>
+
+  <div id="scan"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* The document, verbatim from files/STRUGGLE.txt.
+     Segments marked perm are original damage and can never be healed. */
+  var PARAS = [
+    { cls: 'title', segs: [
+      { t: 'Keynote Speech by N. Sarabhai, "Questioning Doubt"' }
+    ]},
+    { cls: '', segs: [
+      { t: 'They say "doubt everything," but I disagree. Doubt is useful in small amounts, but too much of it leads to apathy and confusion. No, don\'t doubt everything. QUESTION everything. That\'s the real trick. Doubt is just a lack of certainty. If you doubt everything, you\'ll doubt evolution, science, faith, morality, even reality itself - and you\'ll end up with nothing, because doubt doesn\'t give anything back. But questions have answers, you see. If you question everything, you\'ll find that a lot of what we believe is untrue… but you might also discover that some things ARE true. You might discover what your own beliefs are. And then you\'ll question them again, and again, eliminating flaws, discovering lies, until you get as close to the truth as you can.' }
+    ]},
+    { cls: '', segs: [
+      { t: 'Questioning is a lifelong process. That\'s precisely what makes it so unlike doubt. Questioning engages with reality, interrogating all it sees. Questioning leads to a constant assault on the intellectual status quo, where doubt is far more likely to lead to resigned acceptance. After all, when the possibility of truth is doubtful (excuse the pun), why not simply play along with the most convenient lie?' },
+      { t: 'e #%&%§/$', perm: true }
+    ]},
+    { cls: 'coda', segs: [
+      { t: 'Questioning is progress, but doubt is stagnation.' }
+    ]}
+  ];
+
+  var GLYPHS = '#%&%§/$░▒▓';
+  var TICK = 130;          /* ms between decay pulses */
+  var GRACE = 6000;        /* ms before decay begins */
+  var LOCK_MS = 3500;      /* how long a questioned char resists doubt */
+  var RADIUS = 70;         /* heal radius, px (bigger for touch) */
+
+  var doc = document.getElementById('doc');
+  var integrityEl = document.getElementById('integrity');
+  var meterEl = document.getElementById('meter');
+  var statusEl = document.getElementById('status');
+  var hintEl = document.getElementById('hint');
+
+  var chars = [];          /* every decayable character */
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- build the document: words as inline-blocks, chars as spans ---- */
+  function buildSegment(p, seg) {
+    var words = seg.t.split(' ');
+    for (var wi = 0; wi < words.length; wi++) {
+      if (wi > 0) p.appendChild(document.createTextNode(' '));
+      if (!words[wi]) continue;
+      var w = document.createElement('span');
+      w.className = 'w';
+      for (var ci = 0; ci < words[wi].length; ci++) {
+        var s = document.createElement('span');
+        var ch = words[wi].charAt(ci);
+        s.textContent = ch;
+        s.className = seg.perm ? 'c perm' : 'c';
+        w.appendChild(s);
+        if (!seg.perm) {
+          chars.push({ el: s, ch: ch, h: 1, lock: 0, locked: false, glyph: null, x: 0, y: 0 });
+        }
+      }
+      p.appendChild(w);
+    }
+  }
+  for (var pi = 0; pi < PARAS.length; pi++) {
+    var p = document.createElement('p');
+    if (PARAS[pi].cls) p.className = PARAS[pi].cls;
+    for (var si = 0; si < PARAS[pi].segs.length; si++) {
+      buildSegment(p, PARAS[pi].segs[si]);
+    }
+    doc.appendChild(p);
+  }
+
+  /* ---- render a char from its health ---- */
+  function render(c) {
+    var cls;
+    if (c.h >= 0.7) {
+      if (c.el.textContent !== c.ch) c.el.textContent = c.ch;
+      c.glyph = null;
+      cls = 'c';
+    } else if (c.h >= 0.4) {
+      if (c.el.textContent !== c.ch) c.el.textContent = c.ch;
+      cls = 'c fading';
+    } else if (c.h > 0.05) {
+      if (!c.glyph) c.glyph = GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
+      c.el.textContent = c.glyph;
+      cls = 'c rot';
+    } else {
+      c.el.textContent = GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
+      cls = 'c lost';
+    }
+    if (c.locked) cls += ' lock';
+    if (c.el.className !== cls) c.el.className = cls;
+  }
+
+  /* ---- cache page coordinates of every char ---- */
+  function cachePositions() {
+    var sx = window.pageXOffset, sy = window.pageYOffset;
+    for (var i = 0; i < chars.length; i++) {
+      var r = chars[i].el.getBoundingClientRect();
+      chars[i].x = r.left + r.width / 2 + sx;
+      chars[i].y = r.top + r.height / 2 + sy;
+    }
+  }
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(cachePositions, 250);
+  });
+
+  /* ---- questioning: heal around the pointer ---- */
+  var hintGone = false;
+  function heal(px, py, radius) {
+    var r2 = radius * radius;
+    var touched = false;
+    var now = Date.now();
+    for (var i = 0; i < chars.length; i++) {
+      var c = chars[i];
+      var dy = c.y - py;
+      if (dy > radius || dy < -radius) continue;
+      var dx = c.x - px;
+      if (dx * dx + dy * dy > r2) continue;
+      c.h = 1;
+      c.lock = now + LOCK_MS + Math.random() * 1500;
+      c.locked = true;
+      render(c);
+      touched = true;
+    }
+    if (touched && !hintGone) {
+      hintGone = true;
+      hintEl.className = 'gone';
+    }
+  }
+
+  var pending = null;
+  function onPointer(e) {
+    pending = {
+      x: e.pageX,
+      y: e.pageY,
+      r: e.pointerType === 'touch' ? RADIUS * 1.35 : RADIUS
+    };
+  }
+  function pump() {
+    if (pending) {
+      heal(pending.x, pending.y, pending.r);
+      pending = null;
+    }
+    requestAnimationFrame(pump);
+  }
+  document.addEventListener('pointermove', onPointer);
+  document.addEventListener('pointerdown', onPointer);
+  requestAnimationFrame(pump);
+
+  /* ---- doubt: the decay loop ---- */
+  var started = Date.now();
+  var sweep = 0;
+
+  function decayTick() {
+    if (document.hidden) return;
+    var now = Date.now();
+    if (now - started < GRACE) return;
+
+    var n = chars.length;
+    var hits = 4 + Math.floor(Math.random() * 5);
+    for (var k = 0; k < hits; k++) {
+      var i = Math.floor(Math.random() * n);
+      var c = chars[i];
+      if (c.lock > now) continue;
+      c.h = Math.max(0, c.h - (0.2 + Math.random() * 0.3));
+      render(c);
+      /* rot spreads */
+      if (Math.random() < 0.3 && i + 1 < n) {
+        var nb = chars[i + 1];
+        if (nb.lock <= now) {
+          nb.h = Math.max(0, nb.h - (0.15 + Math.random() * 0.2));
+          render(nb);
+        }
+      }
+    }
+
+    /* expire heal-locks in a rotating window so the glow fades */
+    var end = Math.min(sweep + 160, n);
+    for (var j = sweep; j < end; j++) {
+      var cc = chars[j];
+      if (cc.locked && cc.lock <= now) {
+        cc.locked = false;
+        render(cc);
+      }
+    }
+    sweep = end >= n ? 0 : end;
+
+    /* integrity */
+    var sum = 0;
+    for (var m = 0; m < n; m++) sum += chars[m].h;
+    var pct = (sum / n) * 100;
+    integrityEl.textContent = pct.toFixed(1);
+    var meterCls, statusTxt;
+    if (pct >= 80) { meterCls = 'ok'; statusTxt = pct >= 95 ? 'HELD' : 'ERODING'; }
+    else if (pct >= 40) { meterCls = 'warn'; statusTxt = 'DECAYING'; }
+    else { meterCls = 'bad'; statusTxt = pct < 15 ? 'DOUBT PREVAILS' : 'CRITICAL'; }
+    if (meterEl.className !== meterCls) meterEl.className = meterCls;
+    if (statusEl.textContent !== statusTxt) statusEl.textContent = statusTxt;
+  }
+
+  function start() {
+    cachePositions();
+    if (reduced) {
+      statusEl.textContent = 'FROZEN';
+      hintEl.textContent = 'the document holds, for now.';
+      return;
+    }
+    setInterval(decayTick, TICK);
+  }
+
+  /* wait for the font so cached positions are accurate */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { setTimeout(start, 50); });
+  } else {
+    window.addEventListener('load', function () { setTimeout(start, 300); });
+  }
+})();
+</script>
+</body>
+</html>
