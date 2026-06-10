@@ -11,6 +11,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>answer</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="There is no answer. A machine computes it anyway, forever.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://zntznt.com/ANSWER.html">
@@ -117,6 +120,26 @@
   }
   #cert b { font-weight: normal; color: rgba(0, 0, 0, 0.62); }
 
+  /* the way back. camouflaged as chrome, like the door that led here. upper-left. */
+  #door {
+    position: fixed;
+    left: 1.3rem;
+    top: 1.3rem;
+    z-index: 3;
+    font-family: 'Courier New', monospace;
+    font-size: 0.65rem;
+    color: rgba(0, 0, 0, 0.28);
+    text-decoration: none;
+    pointer-events: auto;
+    transition: color 0.25s ease;
+  }
+  #door:hover {
+    color: rgba(0, 0, 0, 0.85);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+  }
+
   /* how many times you've asked. it remembers. upper-right. */
   #count {
     position: fixed;
@@ -203,6 +226,7 @@
 <div id="log"></div>
 <div id="cert"></div>
 <div id="count"></div>
+<a id="door" href="index.html">there is still the question</a>
 <div id="ask">[ ask <span class="b">again</span> ]</div>
 
 <script>
@@ -472,6 +496,8 @@
   }
 
   document.getElementById('ask').addEventListener('click', function (e) { e.stopPropagation(); ask(); });
+  // leaving is not asking
+  document.getElementById('door').addEventListener('click', function (e) { e.stopPropagation(); });
   document.addEventListener('click', ask);
   document.addEventListener('keydown', function (e) {
     if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); ask(); }
