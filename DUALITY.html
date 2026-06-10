@@ -55,6 +55,8 @@ body {
 .nav-link {
   position: fixed;
   bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'Press Start 2P', monospace;
   font-size: 0.6rem;
   color: rgba(228, 167, 30, 0.5);
@@ -68,14 +70,6 @@ body {
 .nav-link:hover {
   color: #E4A71E;
   text-shadow: 0 0 12px rgba(228, 167, 30, 0.6);
-}
-
-.nav-link.left {
-  left: 1.2rem;
-}
-
-.nav-link.right {
-  right: 1.2rem;
 }
 
 #hint {
@@ -106,8 +100,6 @@ body {
     font-size: 0.5rem;
     bottom: 1rem;
   }
-  .nav-link.left { left: 0.8rem; }
-  .nav-link.right { right: 0.8rem; }
   #hint {
     font-size: 0.4rem;
     top: 1rem;
@@ -123,10 +115,9 @@ body {
 </style>
 </head>
 <body onclick="hideHint(); history.go(0);">
-<div id="hint">↻ CLICK TO REROLL</div>
+<div id="hint">CLICK TO REROLL</div>
 <div class="flex" id="flex"></div>
-<a class="nav-link left" href="index.html" onclick="event.stopPropagation();">← RETURN</a>
-<a class="nav-link right" href="#" onclick="event.stopPropagation(); hideHint(); history.go(0); return false;">REROLL ↻</a>
+<a class="nav-link" href="index.html" onclick="event.stopPropagation();">RETURN</a>
 <script src="files/like.js"></script>
 <script>
 function randomize() {
