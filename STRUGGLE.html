@@ -279,6 +279,16 @@
 
   /* ---- questioning: heal around the pointer ---- */
   var hintGone = false;
+  var hintShownAt = Date.now();
+  var HINT_MIN = 8000;   /* keep the hint readable before touch can dismiss it */
+  function dismissHint() {
+    if (hintGone) return;
+    hintGone = true;
+    hintEl.className = 'gone';
+  }
+  /* fall back to an auto-fade so it clears even if never touched */
+  setTimeout(dismissHint, 14000);
+
   function heal(px, py, radius) {
     var r2 = radius * radius;
     var touched = false;
@@ -295,9 +305,8 @@
       render(c);
       touched = true;
     }
-    if (touched && !hintGone) {
-      hintGone = true;
-      hintEl.className = 'gone';
+    if (touched && !hintGone && now - hintShownAt > HINT_MIN) {
+      dismissHint();
     }
   }
 
