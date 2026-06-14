@@ -55,12 +55,27 @@ body {
 
 /* the mythic text — coalesces out of nothing, holds, dissolves back */
 #word {
+  position: relative;
   max-width: 760px;
   opacity: 0;
   filter: blur(16px);
   transform: translateY(10px);
   transition: opacity 1.3s ease, filter 1.3s ease, transform 1.3s ease;
   will-change: opacity, filter, transform;
+}
+
+/* a soft scrim bonded to the text — guarantees contrast against the
+   white-hot core without ever reading as a box. fades with the word. */
+#word::before {
+  content: "";
+  position: absolute;
+  inset: -1.6em -1.8em -1.2em;
+  z-index: -1;
+  background: radial-gradient(ellipse at center,
+    rgba(5, 3, 16, 0.82) 0%,
+    rgba(5, 3, 16, 0.6) 40%,
+    rgba(5, 3, 16, 0) 74%);
+  pointer-events: none;
 }
 
 #word.show {
@@ -74,7 +89,10 @@ body {
   font-weight: 500;
   line-height: 1.4;
   letter-spacing: 0.01em;
-  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.92), 0 0 50px rgba(0, 0, 0, 0.7);
+  text-shadow:
+    0 0 4px rgba(5, 3, 16, 0.95),
+    0 2px 22px rgba(0, 0, 0, 0.92),
+    0 0 50px rgba(0, 0, 0, 0.7);
 }
 
 #word .note {
