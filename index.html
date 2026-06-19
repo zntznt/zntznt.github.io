@@ -187,16 +187,22 @@ body.glitching::after {
 }
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
   margin-bottom: 6px;
 }
 .lambda-text, .links-box, .mado-box {
   border: 6px double #73B036;
   padding: 10px;
+  min-width: 0;
 }
 .lambda-text {
   grid-row: 1 / 3;
+}
+.mado-box img {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 .sidebar {
   display: flex;
@@ -208,7 +214,7 @@ body.glitching::after {
    each is a live generative glyph of a project, and a door to its live app. ---- */
 .sigils {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 10px 16px 14px;
 }
@@ -222,6 +228,7 @@ body.glitching::after {
   flex-direction: column;
   border: 6px double #73B036;
   transition: box-shadow 0.25s ease;
+  min-width: 0;
 }
 .sigil:hover, .sigil:focus-visible {
   box-shadow: 0 0 16px rgba(115, 176, 54, 0.35);
@@ -233,7 +240,7 @@ body.glitching::after {
   line-height: 0;
   overflow: hidden;
 }
-.sigil-canvas canvas { display: block; }
+.sigil-canvas canvas { display: block; max-width: 100%; height: auto; }
 .sigil-label {
   margin-top: 6px;
   font-size: 11px;
@@ -259,8 +266,9 @@ body.glitching::after {
   }
   .links-box, .mado-box {
     flex: 1;
+    min-width: 0;
   }
-  .sigils { grid-template-columns: repeat(2, 1fr); }
+  .sigils { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 480px) {
   .sidebar {
@@ -634,7 +642,7 @@ body.glitching::after {
     var SK = { sim: sim, outline: outline, laser: laser, deck: deck };
 
     function boot() {
-      var els = document.querySelectorAll(".sigil"), insts = [];
+      var els = document.querySelectorAll(".sigil"), insts = [], pairs = [];
       for (var i = 0; i < els.length; i++) {
         (function (el) {
           var key = el.getAttribute("data-sketch");
@@ -643,9 +651,36 @@ body.glitching::after {
           var st = { hover: false, k: 0 };
           el.addEventListener("pointerenter", function () { st.hover = true; });
           el.addEventListener("pointerleave", function () { st.hover = false; });
-          insts.push(new p5(function (pp) { SK[key](pp, holder, st); }, holder));
+          var inst = new p5(function (pp) { SK[key](pp, holder, st); }, holder);
+          insts.push(inst);
+          pairs.push({ inst: inst, holder: holder, w: 0 });
         })(els[i]);
       }
+
+      // keep every canvas buffer matched to its (CSS-constrained) cell width.
+      // p5 measures once at setup; without this, the buffer can outgrow its cell
+      // on resize and overflow the page. width-guarded so the height change a
+      // resize causes can't feed back into an observer loop.
+      function syncSizes() {
+        for (var i = 0; i < pairs.length; i++) {
+          var pr = pairs[i], w = Math.floor(pr.holder.clientWidth);
+          if (w && w !== pr.w && typeof pr.inst.windowResized === "function") {
+            try { pr.inst.windowResized(); pr.w = w; } catch (e) { /* setup not ready; retry next tick */ }
+          }
+        }
+      }
+      if ("ResizeObserver" in window) {
+        var raf = 0;
+        var ro = new ResizeObserver(function () {
+          if (raf) return;
+          raf = requestAnimationFrame(function () { raf = 0; syncSizes(); });
+        });
+        for (var j = 0; j < pairs.length; j++) ro.observe(pairs[j].holder);
+      } else {
+        window.addEventListener("resize", syncSizes);
+      }
+      requestAnimationFrame(syncSizes);   // settle once after first layout
+
       if (reduce) return;
       document.addEventListener("visibilitychange", function () {
         for (var i = 0; i < insts.length; i++) document.hidden ? insts[i].noLoop() : insts[i].loop();
