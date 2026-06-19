@@ -178,6 +178,63 @@ body.glitching::after {
 .glitch-flash {
   animation: glitch-flash 0.3s ease-in-out;
 }
+
+/* ---- the opus strip: p5.js sigils, one points-and-lines engine, four masks.
+   each is a live generative glyph of a project, and a door to its live app. ---- */
+.sigils-cap {
+  margin: 14px 16px 4px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: rgba(115, 176, 54, 0.7);
+}
+.sigils {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 2px 16px 14px;
+}
+.sigil {
+  background: transparent;
+  color: #73B036;
+  text-transform: none;
+  text-decoration: none;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(115, 176, 54, 0.28);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.sigil:hover, .sigil:focus-visible {
+  border-color: #73B036;
+  box-shadow: 0 0 14px rgba(115, 176, 54, 0.3);
+  outline: none;
+}
+.sigil-canvas {
+  display: block;
+  width: 100%;
+  line-height: 0;
+  overflow: hidden;
+}
+.sigil-canvas canvas { display: block; }
+.sigil-label {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #73B036;
+}
+.sigil-desc {
+  font-size: 10px;
+  line-height: 1.25;
+  color: rgba(115, 176, 54, 0.55);
+  text-transform: none;
+}
+@media (max-width: 768px) {
+  .sigils { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 360px) {
+  .sigils { grid-template-columns: 1fr; }
+}
 </style>
 <script type="text/javascript">
   var totalCount = 29;
@@ -293,8 +350,276 @@ body.glitching::after {
             </td>
           </tr>
         </table>
+
+        <div class="sigils-cap">.\opus-space — four toys, drawn live, running in your browser</div>
+        <div class="sigils">
+          <a class="sigil" data-sketch="sim" href="https://zntznt.com/simulations/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">simulations</span>
+            <span class="sigil-desc">economy &amp; feedback sim</span>
+          </a>
+          <a class="sigil" data-sketch="outline" href="https://zntznt.com/pointliner/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">pointliner</span>
+            <span class="sigil-desc">an outliner</span>
+          </a>
+          <a class="sigil" data-sketch="laser" href="https://zntznt.com/laserstorm-force-builder/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">laserstorm</span>
+            <span class="sigil-desc">wargame army builder</span>
+          </a>
+          <a class="sigil" data-sketch="deck" href="https://zntznt.com/termdecks/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">termdecks</span>
+            <span class="sigil-desc">terminal deckbuilder</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- p5.js — the Processing family's web engine — powers the opus sigils above -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1/lib/p5.min.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    if (typeof p5 === "undefined") return;   // links still work without it
+
+    var GREEN = [115, 176, 54];
+    var PURP  = [22, 1, 33];
+    var reduce = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function box(holder) {
+      var w = Math.max(60, Math.floor(holder.clientWidth));
+      var h = Math.max(80, Math.min(120, Math.round(w * 0.66)));
+      return { w: w, h: h };
+    }
+    function trail(p, W, H, a) {
+      p.noStroke();
+      p.fill(PURP[0], PURP[1], PURP[2], a);
+      p.rect(0, 0, W, H);
+    }
+
+    /* simulations: stocks (points) and flows (lines), a live feedback loop */
+    function sim(p, holder, st) {
+      var W, H, t = 0, spawnT = 0;
+      var N = [[0.12, 0.50], [0.38, 0.26], [0.62, 0.50], [0.38, 0.78], [0.88, 0.50]];
+      var E = [[0, 1], [1, 2], [2, 4], [2, 3], [3, 0]];  // ...and a loop back to the source
+      var lvl = [1, 0, 0, 0, 0];
+      var packets = [];
+      function px(i) { return N[i][0] * W; }
+      function py(i) { return N[i][1] * H; }
+      function step() {
+        t += 0.03;
+        lvl[0] = 0.7 + 0.3 * Math.sin(t);
+        for (var i = 1; i < 5; i++) lvl[i] *= 0.96;
+        if (spawnT-- <= 0) {
+          var e = E[Math.floor(p.random(E.length))];
+          if (lvl[e[0]] > 0.25) { packets.push({ e: e, t: 0 }); lvl[e[0]] *= 0.7; }
+          spawnT = st.hover ? 6 : 12;
+        }
+        for (var k = packets.length - 1; k >= 0; k--) {
+          var pk = packets[k]; pk.t += 0.04;
+          if (pk.t >= 1) { lvl[pk.e[1]] = Math.min(1.2, lvl[pk.e[1]] + 0.5); packets.splice(k, 1); }
+        }
+      }
+      function render() {
+        for (var i = 0; i < E.length; i++) {
+          p.stroke(GREEN[0], GREEN[1], GREEN[2], 70); p.strokeWeight(1);
+          p.line(px(E[i][0]), py(E[i][0]), px(E[i][1]), py(E[i][1]));
+        }
+        p.noStroke();
+        for (var k = 0; k < packets.length; k++) {
+          var pk = packets[k];
+          p.fill(170, 255, 120, 230);
+          p.circle(p.lerp(px(pk.e[0]), px(pk.e[1]), pk.t), p.lerp(py(pk.e[0]), py(pk.e[1]), pk.t), 4);
+        }
+        for (var i = 0; i < 5; i++) {
+          var r = 4 + lvl[i] * 7;
+          p.noFill(); p.stroke(GREEN[0], GREEN[1], GREEN[2], 200); p.strokeWeight(1.4);
+          p.circle(px(i), py(i), r * 2);
+          p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 60 + lvl[i] * 150);
+          p.circle(px(i), py(i), r);
+        }
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]);
+        if (reduce) { step(); render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () { trail(p, W, H, 55); step(); render(); };
+    }
+
+    /* pointliner: an outline that grows itself — nodes and hierarchy */
+    function outline(p, holder, st) {
+      var W, H, rows = 6, pad = 10, addT = 0, blink = 0, list;
+      function reset() { list = [{ depth: 0, parent: -1 }]; }
+      function add() {
+        if (list.length >= rows) { reset(); return; }
+        var tries = 0, pi;
+        do { pi = list.length - 1 - Math.floor(Math.abs(p.randomGaussian(0, 1.5))); tries++; }
+        while ((pi < 0 || !list[pi] || list[pi].depth >= 3) && tries < 8);
+        if (pi < 0 || !list[pi]) pi = 0;
+        list.push({ depth: Math.min(3, list[pi].depth + 1), parent: pi });
+      }
+      function rowY(i) { return pad + i * ((H - 2 * pad) / (rows - 1)); }
+      function nodeX(d) { return pad + d * (W * 0.16); }
+      function render() {
+        for (var i = 0; i < list.length; i++) {
+          var d = list[i].depth, x = nodeX(d), y = rowY(i), par = list[i].parent;
+          if (par >= 0) {
+            var pxx = nodeX(list[par].depth), pyy = rowY(par);
+            p.stroke(GREEN[0], GREEN[1], GREEN[2], 90); p.strokeWeight(1);
+            p.line(pxx, pyy + 4, pxx, y);
+            p.line(pxx, y, x - 3, y);
+          }
+          p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 220);
+          p.rect(x, y - 1.5, 3, 3);
+        }
+        if ((blink % 30) < 18) {
+          var li = list.length - 1;
+          p.fill(170, 255, 120, 220);
+          p.rect(nodeX(list[li].depth) + 7, rowY(li) - 4, 4, 8);
+        }
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]); reset();
+        if (reduce) { for (var i = 0; i < 5; i++) add(); render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        trail(p, W, H, 70); blink++;
+        if (addT-- <= 0) { add(); addT = st.hover ? 14 : 26; }
+        render();
+      };
+    }
+
+    /* laserstorm: units in formation, lines of fire */
+    function laser(p, holder, st) {
+      var W, H, units = [], beams = [], volleyT = 0, form = 0, COLS = 4, ROWS = 3;
+      function shape(i, mode) {
+        var c = i % COLS, r = Math.floor(i / COLS);
+        if (mode === 0) return [0.12 + c * 0.10, 0.22 + r * 0.28];
+        if (mode === 1) return [0.10 + r * 0.12, 0.16 + c * 0.16 + r * 0.05];
+        return [0.14 + (i / (COLS * ROWS)) * 0.42, 0.5 + Math.sin(i) * 0.27];
+      }
+      function fire() {
+        var src = Math.floor(p.random(units.length)), n = 3 + Math.floor(p.random(3));
+        for (var k = 0; k < n; k++) beams.push({ s: src, tx: 0.78 + p.random(0.18), ty: p.random(0.15, 0.85), life: 1 });
+      }
+      function render() {
+        for (var i = 0; i < beams.length; i++) {
+          var bm = beams[i], u = units[bm.s];
+          p.stroke(255, 90, 70, 220 * bm.life); p.strokeWeight(2.2 * bm.life);
+          p.line(u.x * W, u.y * H, bm.tx * W, bm.ty * H);
+          p.stroke(255, 230, 200, 240 * bm.life); p.strokeWeight(0.8 * bm.life);
+          p.line(u.x * W, u.y * H, bm.tx * W, bm.ty * H);
+        }
+        for (var i = 0; i < units.length; i++) {
+          p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 210);
+          p.push(); p.translate(units[i].x * W, units[i].y * H); p.rotate(p.PI / 4);
+          p.rect(-2.2, -2.2, 4.4, 4.4); p.pop();
+        }
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]);
+        for (var i = 0; i < COLS * ROWS; i++) { var s = shape(i, 0); units.push({ x: s[0], y: s[1], tx: s[0], ty: s[1], ph: p.random(p.TWO_PI) }); }
+        if (reduce) { render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        trail(p, W, H, 60);
+        for (var i = 0; i < units.length; i++) {
+          var u = units[i];
+          u.x += (u.tx - u.x) * 0.05 + Math.cos(p.frameCount * 0.05 + u.ph) * 0.0006;
+          u.y += (u.ty - u.y) * 0.05 + Math.sin(p.frameCount * 0.05 + u.ph) * 0.0006;
+        }
+        for (var k = beams.length - 1; k >= 0; k--) { beams[k].life -= 0.06; if (beams[k].life <= 0) beams.splice(k, 1); }
+        if (volleyT-- <= 0) { fire(); volleyT = st.hover ? 18 : 40; }
+        if (form-- <= 0) { var m = Math.floor(p.random(3)); for (var i = 0; i < units.length; i++) { var s = shape(i, m); units[i].tx = s[0]; units[i].ty = s[1]; } form = 150; }
+        render();
+      };
+    }
+
+    /* termdecks: a deck deals cards across a terminal grid */
+    function deck(p, holder, st) {
+      var W, H, slots, flying = [], dealT = 0, blink = 0, full = 0, CAP = 4, cw = 0, chh = 0;
+      var GLY = "λ$#>/{}*+".split("");
+      function reset() { slots = []; }
+      function geom() { cw = W * 0.13; chh = cw * 1.4; }
+      function slotPos(i) { return [W * 0.42 + i * (W * 0.135), H * 0.5]; }
+      function cardAt(x, y, g, aa) {
+        p.stroke(GREEN[0], GREEN[1], GREEN[2], aa); p.strokeWeight(1); p.noFill();
+        p.rect(x - cw / 2, y - chh / 2, cw, chh, 2);
+        if (g) { p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], aa); p.textSize(Math.max(8, cw * 0.5)); p.text(g, x, y); }
+      }
+      function render() {
+        geom();
+        for (var s = 0; s < 3; s++) cardAt(W * 0.16 - s * 1.5, H * 0.5 - s * 1.5, "", 120);
+        for (var i = 0; i < slots.length; i++) { var sp = slotPos(i); cardAt(sp[0], sp[1], slots[i].g, 220); }
+        for (var i = 0; i < flying.length; i++) {
+          var f = flying[i], sp = slotPos(f.slot);
+          var x = p.lerp(W * 0.16, sp[0], f.t), y = p.lerp(H * 0.5, sp[1], f.t) - Math.sin(Math.PI * f.t) * H * 0.22;
+          cardAt(x, y, f.g, 240);
+        }
+        if ((blink % 30) < 18) { p.noStroke(); p.fill(170, 255, 120, 220); p.rect(W * 0.08, H * 0.16, 5, 9); }
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]);
+        p.textFont("monospace"); p.textAlign(p.CENTER, p.CENTER); reset();
+        if (reduce) { for (var i = 0; i < CAP; i++) slots.push({ g: GLY[i % GLY.length] }); render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        trail(p, W, H, 80); blink++; geom();
+        for (var k = flying.length - 1; k >= 0; k--) { var f = flying[k]; f.t += 0.05; if (f.t >= 1) { slots[f.slot] = { g: f.g }; flying.splice(k, 1); } }
+        if (full > 0) { if (--full === 0) reset(); }
+        else if (dealT-- <= 0 && flying.length === 0) {
+          if (slots.length >= CAP) full = 40;
+          else { flying.push({ slot: slots.length, t: 0, g: GLY[Math.floor(p.random(GLY.length))] }); dealT = st.hover ? 10 : 22; }
+        }
+        render();
+      };
+    }
+
+    var SK = { sim: sim, outline: outline, laser: laser, deck: deck };
+
+    function boot() {
+      var els = document.querySelectorAll(".sigil"), insts = [];
+      for (var i = 0; i < els.length; i++) {
+        (function (el) {
+          var key = el.getAttribute("data-sketch");
+          if (!SK[key]) return;
+          var holder = el.querySelector(".sigil-canvas");
+          var st = { hover: false };
+          el.addEventListener("mouseenter", function () { st.hover = true; });
+          el.addEventListener("mouseleave", function () { st.hover = false; });
+          insts.push(new p5(function (pp) { SK[key](pp, holder, st); }, holder));
+        })(els[i]);
+      }
+      if (reduce) return;
+      document.addEventListener("visibilitychange", function () {
+        for (var i = 0; i < insts.length; i++) document.hidden ? insts[i].noLoop() : insts[i].loop();
+      });
+      if ("IntersectionObserver" in window) {
+        var strip = document.querySelector(".sigils");
+        if (strip) new IntersectionObserver(function (es) {
+          for (var i = 0; i < insts.length; i++) es[0].isIntersecting ? insts[i].loop() : insts[i].noLoop();
+        }, { threshold: 0.05 }).observe(strip);
+      }
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+    else boot();
+  })();
+  </script>
 </body>
 </html>
