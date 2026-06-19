@@ -179,6 +179,31 @@ body.glitching::after {
   animation: glitch-flash 0.3s ease-in-out;
 }
 
+/* ---- responsive content layout: replaces fragile table rowspan ---- */
+.header-box {
+  border: 6px double #73B036;
+  padding: 10px;
+  margin-bottom: 6px;
+}
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.lambda-text, .links-box, .mado-box {
+  border: 6px double #73B036;
+  padding: 10px;
+}
+.lambda-text {
+  grid-row: 1 / 3;
+}
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* ---- the opus strip: p5.js sigils, one points-and-lines engine, four masks.
    each is a live generative glyph of a project, and a door to its live app. ---- */
 .sigils {
@@ -223,7 +248,24 @@ body.glitching::after {
   text-transform: none;
 }
 @media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  .lambda-text {
+    grid-row: auto;
+  }
+  .sidebar {
+    flex-direction: row;
+  }
+  .links-box, .mado-box {
+    flex: 1;
+  }
   .sigils { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .sidebar {
+    flex-direction: column;
+  }
 }
 @media (max-width: 360px) {
   .sigils { grid-template-columns: 1fr; }
@@ -309,22 +351,17 @@ body.glitching::after {
   <div class="outer">
     <div class="middle">
       <div class="inner" draggable="true">
-        <table>
-          <tr>
-            <td>
-              <h1> ※ Ｚ ※ Ｎ ※ Ｔ ※ </h1>
-            </td>
-          </tr>
-        </table>
-        <br>
-        <table>
-          <tr>
-            <td rowspan="2" width="100%" valign="top">
-                <p>
-                  λ: A <a href="CACOPHONY.html">CACOPHONY</a> of sense. The inevitability of fate. Shaped by your place in space and time. Grasp your ideals, face your circumstances. Separate true essence from still matter. A lonesome <a href="STRUGGLE.html">STRUGGLE</a> against the human condition. The ambiguity of self, the <a href="DUALITY.html">DUALITY</a> of the ideal being and the animal that inhabits the world. Regrets, the fear of rejection. A history of <a href="FAILURES.html">FAILURE</a>. A light in the darkness. Reason, imagination, experience. The tools of evolution, the means of revolution. Life is the <a href="QUESTION.html">QUESTION</a> and there is no <a class="door" href="ANSWER.html">answer</a>.
-                </p>
-            </td>
-            <td>
+        <div class="header-box">
+          <h1> ※ Ｚ ※ Ｎ ※ Ｔ ※ </h1>
+        </div>
+        <div class="content-grid">
+          <div class="lambda-text">
+            <p>
+              λ: A <a href="CACOPHONY.html">CACOPHONY</a> of sense. The inevitability of fate. Shaped by your place in space and time. Grasp your ideals, face your circumstances. Separate true essence from still matter. A lonesome <a href="STRUGGLE.html">STRUGGLE</a> against the human condition. The ambiguity of self, the <a href="DUALITY.html">DUALITY</a> of the ideal being and the animal that inhabits the world. Regrets, the fear of rejection. A history of <a href="FAILURES.html">FAILURE</a>. A light in the darkness. Reason, imagination, experience. The tools of evolution, the means of revolution. Life is the <a href="QUESTION.html">QUESTION</a> and there is no <a class="door" href="ANSWER.html">answer</a>.
+            </p>
+          </div>
+          <div class="sidebar">
+            <div class="links-box">
               <p>
                 <a href="https://twitter.com/zntznt">.\ethos-space</a>
                 <br>
@@ -335,14 +372,12 @@ body.glitching::after {
                 <a href="https://steamcommunity.com/id/zntznt/">.\ludus-space</a>
                 <br>
               </p>
-            </td>
-          </tr>
-          <tr>
-            <td>
+            </div>
+            <div class="mado-box">
               <a class="mado" href="PLAY.html"><img class="mado" src="images/mado.gif" alt="Mado character - link to games page"></a>
-            </td>
-          </tr>
-        </table>
+            </div>
+          </div>
+        </div>
 
         <div class="sigils">
           <a class="sigil" data-sketch="sim" href="https://zntznt.com/simulations/">
