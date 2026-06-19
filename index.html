@@ -181,32 +181,25 @@ body.glitching::after {
 
 /* ---- the opus strip: p5.js sigils, one points-and-lines engine, four masks.
    each is a live generative glyph of a project, and a door to its live app. ---- */
-.sigils-cap {
-  margin: 14px 16px 4px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  color: rgba(115, 176, 54, 0.7);
-}
 .sigils {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  padding: 2px 16px 14px;
+  padding: 10px 16px 14px;
 }
 .sigil {
   background: transparent;
   color: #73B036;
   text-transform: none;
   text-decoration: none;
-  padding: 5px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(115, 176, 54, 0.28);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  border: 6px double #73B036;
+  transition: box-shadow 0.25s ease;
 }
 .sigil:hover, .sigil:focus-visible {
-  border-color: #73B036;
-  box-shadow: 0 0 14px rgba(115, 176, 54, 0.3);
+  box-shadow: 0 0 16px rgba(115, 176, 54, 0.35);
   outline: none;
 }
 .sigil-canvas {
@@ -351,7 +344,6 @@ body.glitching::after {
           </tr>
         </table>
 
-        <div class="sigils-cap">.\opus-space — four toys, drawn live, running in your browser</div>
         <div class="sigils">
           <a class="sigil" data-sketch="sim" href="https://zntznt.com/simulations/">
             <span class="sigil-canvas" aria-hidden="true"></span>
@@ -411,22 +403,25 @@ body.glitching::after {
       function px(i) { return N[i][0] * W; }
       function py(i) { return N[i][1] * H; }
       function step() {
-        t += 0.03;
+        t += 0.03 + st.k * 0.03;
         lvl[0] = 0.7 + 0.3 * Math.sin(t);
         for (var i = 1; i < 5; i++) lvl[i] *= 0.96;
         if (spawnT-- <= 0) {
-          var e = E[Math.floor(p.random(E.length))];
-          if (lvl[e[0]] > 0.25) { packets.push({ e: e, t: 0 }); lvl[e[0]] *= 0.7; }
-          spawnT = st.hover ? 6 : 12;
+          var emit = 1 + Math.floor(st.k * 2.5);
+          for (var m = 0; m < emit; m++) {
+            var e = E[Math.floor(p.random(E.length))];
+            if (lvl[e[0]] > 0.2) { packets.push({ e: e, t: 0 }); lvl[e[0]] *= 0.75; }
+          }
+          spawnT = Math.round(13 - st.k * 9);
         }
         for (var k = packets.length - 1; k >= 0; k--) {
-          var pk = packets[k]; pk.t += 0.04;
-          if (pk.t >= 1) { lvl[pk.e[1]] = Math.min(1.2, lvl[pk.e[1]] + 0.5); packets.splice(k, 1); }
+          var pk = packets[k]; pk.t += 0.04 + st.k * 0.05;
+          if (pk.t >= 1) { lvl[pk.e[1]] = Math.min(1.3, lvl[pk.e[1]] + 0.5); packets.splice(k, 1); }
         }
       }
       function render() {
         for (var i = 0; i < E.length; i++) {
-          p.stroke(GREEN[0], GREEN[1], GREEN[2], 70); p.strokeWeight(1);
+          p.stroke(GREEN[0], GREEN[1], GREEN[2], 70 + st.k * 150); p.strokeWeight(1 + st.k * 0.8);
           p.line(px(E[i][0]), py(E[i][0]), px(E[i][1]), py(E[i][1]));
         }
         p.noStroke();
@@ -450,7 +445,10 @@ body.glitching::after {
         if (reduce) { step(); render(); p.noLoop(); }
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
-      p.draw = function () { trail(p, W, H, 55); step(); render(); };
+      p.draw = function () {
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, 55 - st.k * 15); step(); render();
+      };
     }
 
     /* pointliner: an outline that grows itself — nodes and hierarchy */
@@ -472,12 +470,13 @@ body.glitching::after {
           var d = list[i].depth, x = nodeX(d), y = rowY(i), par = list[i].parent;
           if (par >= 0) {
             var pxx = nodeX(list[par].depth), pyy = rowY(par);
-            p.stroke(GREEN[0], GREEN[1], GREEN[2], 90); p.strokeWeight(1);
+            p.stroke(GREEN[0], GREEN[1], GREEN[2], 90 + st.k * 140); p.strokeWeight(1);
             p.line(pxx, pyy + 4, pxx, y);
             p.line(pxx, y, x - 3, y);
           }
           p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 220);
-          p.rect(x, y - 1.5, 3, 3);
+          var bs = 3 + st.k * 1.6;
+          p.rect(x - (bs - 3) / 2, y - bs / 2, bs, bs);
         }
         if ((blink % 30) < 18) {
           var li = list.length - 1;
@@ -493,8 +492,9 @@ body.glitching::after {
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
-        trail(p, W, H, 70); blink++;
-        if (addT-- <= 0) { add(); addT = st.hover ? 14 : 26; }
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, 70); blink += 1 + Math.round(st.k * 2);
+        if (addT-- <= 0) { add(); addT = Math.round(26 - st.k * 20); }
         render();
       };
     }
@@ -509,8 +509,11 @@ body.glitching::after {
         return [0.14 + (i / (COLS * ROWS)) * 0.42, 0.5 + Math.sin(i) * 0.27];
       }
       function fire() {
-        var src = Math.floor(p.random(units.length)), n = 3 + Math.floor(p.random(3));
-        for (var k = 0; k < n; k++) beams.push({ s: src, tx: 0.78 + p.random(0.18), ty: p.random(0.15, 0.85), life: 1 });
+        var bursts = 1 + Math.floor(st.k * 3);
+        for (var b = 0; b < bursts; b++) {
+          var src = Math.floor(p.random(units.length)), n = 3 + Math.floor(p.random(3));
+          for (var k = 0; k < n; k++) beams.push({ s: src, tx: 0.78 + p.random(0.18), ty: p.random(0.15, 0.85), life: 1 });
+        }
       }
       function render() {
         for (var i = 0; i < beams.length; i++) {
@@ -535,14 +538,15 @@ body.glitching::after {
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
-        trail(p, W, H, 60);
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, 60 - st.k * 18);
         for (var i = 0; i < units.length; i++) {
           var u = units[i];
           u.x += (u.tx - u.x) * 0.05 + Math.cos(p.frameCount * 0.05 + u.ph) * 0.0006;
           u.y += (u.ty - u.y) * 0.05 + Math.sin(p.frameCount * 0.05 + u.ph) * 0.0006;
         }
         for (var k = beams.length - 1; k >= 0; k--) { beams[k].life -= 0.06; if (beams[k].life <= 0) beams.splice(k, 1); }
-        if (volleyT-- <= 0) { fire(); volleyT = st.hover ? 18 : 40; }
+        if (volleyT-- <= 0) { fire(); volleyT = Math.round(42 - st.k * 36); }
         if (form-- <= 0) { var m = Math.floor(p.random(3)); for (var i = 0; i < units.length; i++) { var s = shape(i, m); units[i].tx = s[0]; units[i].ty = s[1]; } form = 150; }
         render();
       };
@@ -580,12 +584,13 @@ body.glitching::after {
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
-        trail(p, W, H, 80); blink++; geom();
-        for (var k = flying.length - 1; k >= 0; k--) { var f = flying[k]; f.t += 0.05; if (f.t >= 1) { slots[f.slot] = { g: f.g }; flying.splice(k, 1); } }
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, 80); blink += 1 + Math.round(st.k * 2); geom();
+        for (var k = flying.length - 1; k >= 0; k--) { var f = flying[k]; f.t += 0.05 + st.k * 0.06; if (f.t >= 1) { slots[f.slot] = { g: f.g }; flying.splice(k, 1); } }
         if (full > 0) { if (--full === 0) reset(); }
         else if (dealT-- <= 0 && flying.length === 0) {
-          if (slots.length >= CAP) full = 40;
-          else { flying.push({ slot: slots.length, t: 0, g: GLY[Math.floor(p.random(GLY.length))] }); dealT = st.hover ? 10 : 22; }
+          if (slots.length >= CAP) full = Math.round(40 - st.k * 30);
+          else { flying.push({ slot: slots.length, t: 0, g: GLY[Math.floor(p.random(GLY.length))] }); dealT = Math.round(24 - st.k * 18); }
         }
         render();
       };
@@ -600,9 +605,9 @@ body.glitching::after {
           var key = el.getAttribute("data-sketch");
           if (!SK[key]) return;
           var holder = el.querySelector(".sigil-canvas");
-          var st = { hover: false };
-          el.addEventListener("mouseenter", function () { st.hover = true; });
-          el.addEventListener("mouseleave", function () { st.hover = false; });
+          var st = { hover: false, k: 0 };
+          el.addEventListener("pointerenter", function () { st.hover = true; });
+          el.addEventListener("pointerleave", function () { st.hover = false; });
           insts.push(new p5(function (pp) { SK[key](pp, holder, st); }, holder));
         })(els[i]);
       }
