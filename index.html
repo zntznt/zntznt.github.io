@@ -179,30 +179,62 @@ body.glitching::after {
   animation: glitch-flash 0.3s ease-in-out;
 }
 
-/* ---- responsive content layout: replaces fragile table rowspan ---- */
+/* ---- responsive content layout: replaces fragile table rowspan.
+   one uniform 6px seam everywhere — between header / grid / sigils and
+   inside the grid — so the gridwork reads as evenly as the old <table>. ---- */
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* styles.css gives .inner a 3px border + 6px padding, so the frame-to-box
+     inset was 9px while every internal seam is 6px. Drop padding to 3px:
+     3px border + 3px padding = 6px, matching every seam on the page. */
+  padding: 3px;
+}
 .header-box {
   border: 6px double #73B036;
   padding: 10px;
-  margin-bottom: 6px;
 }
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr;   /* one full-height row — see the mado TIP below */
   gap: 6px;
-  margin-bottom: 6px;
 }
 .lambda-text, .links-box, .mado-box {
   border: 6px double #73B036;
   padding: 10px;
   min-width: 0;
 }
-.lambda-text {
-  grid-row: 1 / 3;
+/* TIP — making the mado gif fill its box with no dead space below it.
+   The gif was never the problem; the box's *height* was. It's a full-height
+   chain that must hold link-by-link, top to bottom — break any link and the
+   gif shrinks back to its natural size and a gap reappears under it:
+
+     content-grid  grid-template-rows: 1fr   → ONE row, so the sidebar column
+                                                is as tall as the λ text (not a
+                                                2-row grid where it'd be short)
+     sidebar       display:flex column        → distributes that height
+     mado-box      flex:1 1 auto; min-height:0 → grows to take the leftover
+     a             height:100%                → fills the grown box
+     img           height:100%; object-fit:cover → fills the link
+
+   object-fit:cover crops imperceptibly: gif is 171x159, near-square like the
+   box. If you ever see dead space here again, check grid-template-rows FIRST. */
+.mado-box {
+  flex: 1 1 auto;
+  min-height: 0;
 }
-.mado-box img {
+.mado-box > a {
   display: block;
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 100%;
+}
+.mado-box > a > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .sidebar {
   display: flex;
@@ -217,7 +249,9 @@ body.glitching::after {
 .sigils {
   display: flex;
   gap: 6px;
-  padding: 10px 16px 14px;
+  /* no padding: the cards carry their own borders and meet the rail edge
+     flush, exactly as every other box meets the .inner frame. */
+  padding: 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: thin;
@@ -234,7 +268,7 @@ body.glitching::after {
   color: #73B036;
   text-transform: none;
   text-decoration: none;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   border: 6px double #73B036;
@@ -242,6 +276,7 @@ body.glitching::after {
   /* fixed-ish width so items overflow into the rail rather than squishing */
   flex: 0 0 clamp(120px, 22%, 170px);
   scroll-snap-align: start;
+  gap: 6px;            /* even rhythm between canvas, label, desc */
 }
 .sigil:hover, .sigil:focus-visible {
   box-shadow: 0 0 16px rgba(115, 176, 54, 0.35);
@@ -255,7 +290,6 @@ body.glitching::after {
 }
 .sigil-canvas canvas { display: block; max-width: 100%; height: auto; }
 .sigil-label {
-  margin-top: 6px;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
