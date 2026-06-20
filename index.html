@@ -210,13 +210,24 @@ body.glitching::after {
   gap: 6px;
 }
 
-/* ---- the opus strip: p5.js sigils, one points-and-lines engine, four masks.
-   each is a live generative glyph of a project, and a door to its live app. ---- */
+/* ---- the opus strip: p5.js sigils, one points-and-lines engine, many masks.
+   each is a live generative glyph of a project, and a door to its live app.
+   a horizontal scroll-snap rail — the strip overflows and you drag/scroll
+   through it, so any number of projects fits without squeezing the glyphs. ---- */
 .sigils {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
   gap: 6px;
   padding: 10px 16px 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(115, 176, 54, 0.5) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.sigils::-webkit-scrollbar { height: 6px; }
+.sigils::-webkit-scrollbar-thumb {
+  background: rgba(115, 176, 54, 0.5);
+  border-radius: 3px;
 }
 .sigil {
   background: transparent;
@@ -228,7 +239,9 @@ body.glitching::after {
   flex-direction: column;
   border: 6px double #73B036;
   transition: box-shadow 0.25s ease;
-  min-width: 0;
+  /* fixed-ish width so items overflow into the rail rather than squishing */
+  flex: 0 0 clamp(120px, 22%, 170px);
+  scroll-snap-align: start;
 }
 .sigil:hover, .sigil:focus-visible {
   box-shadow: 0 0 16px rgba(115, 176, 54, 0.35);
@@ -268,15 +281,11 @@ body.glitching::after {
     flex: 1;
     min-width: 0;
   }
-  .sigils { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 480px) {
   .sidebar {
     flex-direction: column;
   }
-}
-@media (max-width: 360px) {
-  .sigils { grid-template-columns: 1fr; }
 }
 </style>
 <script type="text/javascript">
@@ -407,6 +416,11 @@ body.glitching::after {
             <span class="sigil-canvas" aria-hidden="true"></span>
             <span class="sigil-label">termdecks</span>
             <span class="sigil-desc">terminal deckbuilder</span>
+          </a>
+          <a class="sigil" data-sketch="icon" href="https://zntznt.com/iconizer/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">iconizer</span>
+            <span class="sigil-desc">glyph &amp; icon forge</span>
           </a>
         </div>
       </div>
@@ -639,7 +653,50 @@ body.glitching::after {
       };
     }
 
-    var SK = { sim: sim, outline: outline, laser: laser, deck: deck };
+    /* iconizer: a pixel grid forges a symmetric glyph, dissolves, re-forges */
+    function icon(p, holder, st) {
+      var W, H, G = 5, cells, forgeT = 0, blink = 0, pad;
+      function geom() { pad = Math.min(W, H) * 0.16; }
+      function forge() {
+        cells = [];
+        var half = Math.ceil(G / 2);
+        for (var r = 0; r < G; r++) for (var c = 0; c < half; c++) {
+          var on = p.random() < 0.5;
+          cells.push({ r: r, c: c, on: on, a: 0 });
+          if (c !== G - 1 - c) cells.push({ r: r, c: G - 1 - c, on: on, a: 0 }); // mirror for symmetry
+        }
+      }
+      function cx(c) { return pad + c * ((W - 2 * pad) / (G - 1)); }
+      function cy(r) { return pad + r * ((H - 2 * pad) / (G - 1)); }
+      function render() {
+        geom();
+        var sz = ((W - 2 * pad) / (G - 1)) * (0.42 + st.k * 0.18);
+        for (var i = 0; i < cells.length; i++) {
+          var cl = cells[i];
+          cl.a += ((cl.on ? 1 : 0.12) - cl.a) * 0.12;
+          var x = cx(cl.c), y = cy(cl.r);
+          p.noStroke();
+          p.fill(GREEN[0], GREEN[1], GREEN[2], 40 + cl.a * 190);
+          p.rect(x - sz / 2, y - sz / 2, sz, sz, 1);
+        }
+        if ((blink % 30) < 18) { p.noStroke(); p.fill(170, 255, 120, 220); p.rect(W * 0.08, H * 0.12, 5, 9); }
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]); geom(); forge();
+        if (reduce) { for (var i = 0; i < cells.length; i++) cells[i].a = cells[i].on ? 1 : 0.12; render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, 70); blink += 1 + Math.round(st.k * 2);
+        if (forgeT-- <= 0) { forge(); forgeT = Math.round(80 - st.k * 55); }
+        render();
+      };
+    }
+
+    var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon };
 
     function boot() {
       var els = document.querySelectorAll(".sigil"), insts = [], pairs = [];
@@ -685,11 +742,19 @@ body.glitching::after {
       document.addEventListener("visibilitychange", function () {
         for (var i = 0; i < insts.length; i++) document.hidden ? insts[i].noLoop() : insts[i].loop();
       });
+      // gate each sigil on its own visibility — a scroll rail can push some
+      // off-screen horizontally, so pause exactly those, not all-or-nothing.
       if ("IntersectionObserver" in window) {
-        var strip = document.querySelector(".sigils");
-        if (strip) new IntersectionObserver(function (es) {
-          for (var i = 0; i < insts.length; i++) es[0].isIntersecting ? insts[i].loop() : insts[i].noLoop();
-        }, { threshold: 0.05 }).observe(strip);
+        var io = new IntersectionObserver(function (es) {
+          for (var i = 0; i < es.length; i++) {
+            var pr = pairs[es[i].target._idx];
+            if (pr) es[i].isIntersecting ? pr.inst.loop() : pr.inst.noLoop();
+          }
+        }, { threshold: 0.05 });
+        for (var k = 0; k < pairs.length; k++) {
+          pairs[k].holder._idx = k;
+          io.observe(pairs[k].holder);
+        }
       }
     }
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
