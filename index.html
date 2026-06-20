@@ -268,6 +268,10 @@ body.glitching::after {
   color: #73B036;
   text-transform: none;
   text-decoration: none;
+  /* .inner sets text-align:justify (good for the λ prose); override it here so
+     the short label/desc copy reads left-aligned instead of stretching into
+     gappy justified rivers when it wraps on narrow cards. */
+  text-align: left;
   padding: 6px;
   display: flex;
   flex-direction: column;
