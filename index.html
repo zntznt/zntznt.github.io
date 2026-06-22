@@ -23,6 +23,130 @@ body {
   overflow-x: hidden;
 }
 
+/* ============================================================
+   CRT screen shell — homepage only.
+   Three fixed overlays in front of everything (the "glass"):
+     #crt-scanlines : fine horizontal scanlines + faint RGB triad
+     #crt-vignette  : edge darkening that SELLS the screen curvature
+                      (a tube's corners fall away from the viewer → darker)
+     #crt-bulge     : a soft highlight + gentle corner shadow = subtle bulge cue
+   plus rounded screen-glass corners on .outer.
+   NOTE: a true barrel warp needs feDisplacementMap, which re-rasterizes the
+   whole page (blurs this careful type, costs GPU every p5/glitch frame). For
+   a *subtle* real-CRT look the vignette+highlight reads as curvature without
+   that cost — the 3% geometric bulge wouldn't be visible enough to justify it.
+   ============================================================ */
+.outer {
+  border-radius: 18px / 28px;   /* slightly rounded screen corners (CRT glass) */
+  overflow: hidden;
+}
+
+#crt-scanlines, #crt-vignette, #crt-bulge {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;                /* above content, below #whisper (9999) */
+}
+#crt-scanlines {
+  background:
+    /* horizontal scanlines — 1px dark every 3px, the CRT signature */
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0.22) 3px
+    ),
+    /* faint vertical RGB aperture-grille triad */
+    repeating-linear-gradient(
+      to right,
+      rgba(255, 0, 0, 0.04),
+      rgba(0, 255, 0, 0.02) 1px,
+      rgba(0, 0, 255, 0.04) 2px,
+      rgba(0, 0, 0, 0) 3px
+    );
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+#crt-vignette {
+  /* harder elliptical falloff than a photo vignette — a tube's corners go
+     genuinely dark. clear center, steep edge, near-black corners + a thin
+     inner shadow ring just inside the bezel (the glass meeting the mask). */
+  background:
+    radial-gradient(
+      ellipse 80% 74% at 50% 50%,
+      rgba(0, 0, 0, 0) 48%,
+      rgba(0, 0, 0, 0.45) 82%,
+      rgba(0, 0, 0, 0.92) 100%
+    ),
+    /* inner bezel shadow ring — darkens the last few % sharply */
+    radial-gradient(
+      ellipse 94% 90% at 50% 50%,
+      rgba(0, 0, 0, 0) 90%,
+      rgba(0, 0, 0, 0.5) 100%
+    );
+}
+#crt-bulge {
+  /* glass sheen (top-left) + phosphor corner-glow pooling (green bloom at
+     the four corners, where a tube's beam over-scans and blooms). */
+  background:
+    radial-gradient(ellipse 60% 45% at 32% 18%,
+      rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 60%),
+    radial-gradient(circle at 0% 0%,    rgba(51,255,51,0.08), rgba(51,255,51,0) 22%),
+    radial-gradient(circle at 100% 0%,  rgba(51,255,51,0.08), rgba(51,255,51,0) 22%),
+    radial-gradient(circle at 0% 100%,  rgba(51,255,51,0.08), rgba(51,255,51,0) 22%),
+    radial-gradient(circle at 100% 100%,rgba(51,255,51,0.08), rgba(51,255,51,0) 22%);
+  mix-blend-mode: screen;
+}
+
+/* the tube is alive: a barely-there brightness flicker (mains hum) and a
+   bright scan band that rolls slowly down the screen (refresh-sync artifact).
+   both are tiny — they register as "powered CRT", not as motion. */
+#crt-flicker {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;                       /* just under the scanlines/vignette */
+  background: rgba(51, 255, 51, 0.025);
+  mix-blend-mode: screen;
+  animation: crt-flicker 0.12s steps(2, end) infinite;
+}
+#crt-roll {
+  position: fixed;
+  left: 0; right: 0;
+  height: 22%;
+  top: -22%;
+  pointer-events: none;
+  z-index: 9997;
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.045) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  mix-blend-mode: screen;
+  opacity: 0;                          /* hidden until JS sends it on a pass */
+}
+/* one pass; JS sets --roll-dur per pass and toggles .rolling so speed varies
+   and the band only appears when "v-sync drifts" — see crt-roll script. */
+#crt-roll.rolling {
+  opacity: 1;
+  animation: crt-roll var(--roll-dur, 6s) linear;
+}
+@keyframes crt-flicker {
+  0%   { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+@keyframes crt-roll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(560vh); }   /* travels well past the bottom */
+}
+@media (prefers-reduced-motion: reduce) {
+  #crt-flicker, #crt-roll { animation: none; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* scanlines/vignette are static, fine to keep; nothing animated here */
+}
+
 /* the hidden door: looks like prose, reachable only by the cursor.
    the answer, found inside the sentence that denies it exists. */
 a.door {
@@ -35,6 +159,67 @@ a.door:hover {
   text-decoration: underline;
   text-decoration-style: dotted;
   text-underline-offset: 2px;
+}
+
+/* ---- hover chromatic aberration: any clickable element splits into an
+   RGB ghost and jitters while pointed at. reuses the page's existing
+   aberration palette (red rgba(255,0,60) left, cyan rgba(0,200,255) right,
+   same as #whisper below) so the whole site speaks one visual language.
+   pure CSS — p5 would mean a canvas per link for an effect text-shadow does. */
+/* text barely moves (gentle ~0.2px sway); the RGB split is what swings hard,
+   ranging 0.03em–0.12em and flipping sides each step for a violent shimmer. */
+@keyframes aberrate-text {
+  0%   { text-shadow: -0.10em 0 0 rgba(255,0,60,0.9),  0.10em 0 0 rgba(0,200,255,0.9); transform: translate(0,0); }
+  20%  { text-shadow:  0.12em 0 0 rgba(255,0,60,0.9), -0.06em 0 0 rgba(0,200,255,0.9); transform: translate(0.2px,0); }
+  40%  { text-shadow: -0.03em 0 0 rgba(255,0,60,0.9),  0.12em 0 0 rgba(0,200,255,0.9); transform: translate(0,-0.2px); }
+  60%  { text-shadow:  0.11em 0 0 rgba(255,0,60,0.9), -0.11em 0 0 rgba(0,200,255,0.9); transform: translate(-0.2px,0); }
+  80%  { text-shadow: -0.12em 0 0 rgba(255,0,60,0.9),  0.04em 0 0 rgba(0,200,255,0.9); transform: translate(0,0.2px); }
+  100% { text-shadow: -0.10em 0 0 rgba(255,0,60,0.9),  0.10em 0 0 rgba(0,200,255,0.9); transform: translate(0,0); }
+}
+@keyframes aberrate-img {
+  0%   { filter: drop-shadow(-6px 0 0 rgba(255,0,60,0.75)) drop-shadow(6px 0 0 rgba(0,200,255,0.75)); transform: translate(0,0); }
+  20%  { filter: drop-shadow(8px 0 0 rgba(255,0,60,0.75)) drop-shadow(-4px 0 0 rgba(0,200,255,0.75)); transform: translate(0.2px,0); }
+  40%  { filter: drop-shadow(-3px 0 0 rgba(255,0,60,0.75)) drop-shadow(9px 0 0 rgba(0,200,255,0.75)); transform: translate(0,-0.2px); }
+  60%  { filter: drop-shadow(7px 0 0 rgba(255,0,60,0.75)) drop-shadow(-7px 0 0 rgba(0,200,255,0.75)); transform: translate(-0.2px,0); }
+  80%  { filter: drop-shadow(-9px 0 0 rgba(255,0,60,0.75)) drop-shadow(3px 0 0 rgba(0,200,255,0.75)); transform: translate(0,0.2px); }
+  100% { filter: drop-shadow(-6px 0 0 rgba(255,0,60,0.75)) drop-shadow(6px 0 0 rgba(0,200,255,0.75)); transform: translate(0,0); }
+}
+/* the title's own quiet twitch: a single brief aberration burst, gentler than
+   the hover effect (it's unprompted, so it must not distract). fires once per
+   class toggle; JS re-adds the class at irregular intervals — see h1-glitch
+   script below. the title sits still otherwise. */
+@keyframes title-aberrate {
+  0%   { text-shadow: none; }
+  30%  { text-shadow: -0.05em 0 0 rgba(255,0,60,0.7),  0.05em 0 0 rgba(0,200,255,0.7); }
+  55%  { text-shadow:  0.06em 0 0 rgba(255,0,60,0.7), -0.04em 0 0 rgba(0,200,255,0.7); }
+  80%  { text-shadow: -0.03em 0 0 rgba(255,0,60,0.7),  0.03em 0 0 rgba(0,200,255,0.7); }
+  100% { text-shadow: none; }
+}
+h1.aberrate { animation: title-aberrate 0.45s steps(4, end); }
+@media (prefers-reduced-motion: reduce) {
+  h1.aberrate { animation: none; }
+}
+
+/* text links (and the hidden door, the sigil cards): split the glyphs */
+a:hover, a:focus-visible {
+  animation: aberrate-text 0.2s steps(5, end) infinite;
+}
+/* the mado image link: drop-shadow splits the bitmap instead of text */
+a.mado:hover img, a.mado:focus-visible img {
+  animation: aberrate-img 0.2s steps(5, end) infinite;
+}
+/* a hovered sigil card shouldn't jitter the whole card (its p5 canvas lives
+   inside) — only aberrate its text label, leave the canvas steady. */
+.sigil:hover, .sigil:focus-visible { animation: none; }
+.sigil:hover .sigil-label, .sigil:focus-visible .sigil-label {
+  animation: aberrate-text 0.2s steps(5, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  a:hover, a:focus-visible,
+  a.mado:hover img, a.mado:focus-visible img,
+  .sigil:hover .sigil-label, .sigil:focus-visible .sigil-label {
+    animation: none;
+  }
 }
 
 /* the whisper: accusation in the glitch, gone before you can read it.
@@ -112,39 +297,6 @@ a.door:hover {
   }
 }
 
-@keyframes glitch-flash {
-  0%, 100% {
-    opacity: 1;
-  }
-  10% {
-    opacity: 0.8;
-  }
-  20% {
-    opacity: 1;
-  }
-  30% {
-    opacity: 0.4;
-  }
-  40% {
-    opacity: 0.9;
-  }
-  50% {
-    opacity: 1;
-  }
-  60% {
-    opacity: 0.7;
-  }
-  70% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 0.5;
-  }
-  90% {
-    opacity: 0.9;
-  }
-}
-
 /* Content stays fixed - glitch effect only on pseudo-elements */
 
 body.glitching::before,
@@ -161,22 +313,51 @@ body.glitching::after {
   pointer-events: none;
 }
 
+/* the glitch burst: short and snappy (0.35s, stepped so it SNAPS, not glides),
+   with real clip-path tears + a few px of RGB shift — reads as a digital tear.
+   the violence is fine now because the IMAGE underneath crossfades smoothly;
+   it was the hard image cut + sustained thrash together that felt jarring. */
+@keyframes glitch-tear {
+  0%   { opacity: 0;   clip-path: inset(0 0 0 0);     transform: translateX(0); }
+  15%  { opacity: 0.9; clip-path: inset(15% 0 55% 0); transform: translateX(4px); }
+  35%  { opacity: 0.7; clip-path: inset(70% 0 8% 0);  transform: translateX(-5px); }
+  55%  { opacity: 0.9; clip-path: inset(40% 0 38% 0); transform: translateX(3px); }
+  75%  { opacity: 0.5; clip-path: inset(8% 0 80% 0);  transform: translateX(-2px); }
+  100% { opacity: 0;   clip-path: inset(0 0 0 0);     transform: translateX(0); }
+}
 body.glitching::before {
-  left: 2px;
-  animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  background-color: rgba(255, 0, 0, 0.1);
-  mix-blend-mode: multiply;
+  left: 3px;
+  animation: glitch-tear 0.35s steps(5, end) both;
+  background-color: rgba(255, 0, 60, 0.18);
+  mix-blend-mode: screen;
 }
-
 body.glitching::after {
-  left: -2px;
-  animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both;
-  background-color: rgba(0, 255, 255, 0.1);
-  mix-blend-mode: multiply;
+  left: -3px;
+  animation: glitch-tear 0.35s steps(5, end) reverse both;
+  background-color: rgba(0, 200, 255, 0.18);
+  mix-blend-mode: screen;
 }
 
-.glitch-flash {
-  animation: glitch-flash 0.3s ease-in-out;
+/* crossfade underlay: holds the outgoing background and fades it out while the
+   body instantly shows the incoming one — so the image swap is a dissolve,
+   not a hard cut. fixed, behind everything, never interactive. */
+#bg-fade {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+  background-repeat: repeat;
+  opacity: 0;
+}
+#bg-fade.fading {
+  opacity: 1;
+  transition: none;          /* snap to the old image... */
+}
+#bg-fade.done {
+  opacity: 0;
+  transition: opacity 0.7s ease-out;   /* ...then dissolve it away */
 }
 
 /* ---- responsive content layout: replaces fragile table rowspan.
@@ -192,7 +373,7 @@ body.glitching::after {
   padding: 3px;
 }
 .header-box {
-  border: 6px double #73B036;
+  border: 6px double #33FF33;
   padding: 10px;
 }
 .content-grid {
@@ -202,7 +383,7 @@ body.glitching::after {
   gap: 6px;
 }
 .lambda-text, .links-box, .mado-box {
-  border: 6px double #73B036;
+  border: 6px double #33FF33;
   padding: 10px;
   min-width: 0;
 }
@@ -226,15 +407,18 @@ body.glitching::after {
   min-height: 0;
 }
 .mado-box > a {
-  display: block;
+  display: flex;            /* box keeps its size; center the gif inside it */
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
 }
 .mado-box > a > img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: auto;             /* natural size — never stretched or scaled up */
+  height: auto;
+  max-width: 100%;         /* only shrink if the box is narrower than the gif */
+  max-height: 100%;
 }
 .sidebar {
   display: flex;
@@ -255,17 +439,17 @@ body.glitching::after {
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: thin;
-  scrollbar-color: rgba(115, 176, 54, 0.5) transparent;
+  scrollbar-color: rgba(51, 255, 51, 0.5) transparent;
   -webkit-overflow-scrolling: touch;
 }
 .sigils::-webkit-scrollbar { height: 6px; }
 .sigils::-webkit-scrollbar-thumb {
-  background: rgba(115, 176, 54, 0.5);
+  background: rgba(51, 255, 51, 0.5);
   border-radius: 3px;
 }
 .sigil {
   background: transparent;
-  color: #73B036;
+  color: #33FF33;
   text-transform: none;
   text-decoration: none;
   /* .inner sets text-align:justify (good for the λ prose); override it here so
@@ -275,7 +459,7 @@ body.glitching::after {
   padding: 6px;
   display: flex;
   flex-direction: column;
-  border: 6px double #73B036;
+  border: 6px double #33FF33;
   transition: box-shadow 0.25s ease;
   /* fixed-ish width so items overflow into the rail rather than squishing */
   flex: 0 0 clamp(120px, 22%, 170px);
@@ -283,7 +467,7 @@ body.glitching::after {
   gap: 6px;            /* even rhythm between canvas, label, desc */
 }
 .sigil:hover, .sigil:focus-visible {
-  box-shadow: 0 0 16px rgba(115, 176, 54, 0.35);
+  box-shadow: 0 0 16px rgba(51, 255, 51, 0.35);
   outline: none;
 }
 .sigil-canvas {
@@ -297,12 +481,12 @@ body.glitching::after {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #73B036;
+  color: #33FF33;
 }
 .sigil-desc {
   font-size: 10px;
   line-height: 1.25;
-  color: rgba(115, 176, 54, 0.55);
+  color: rgba(51, 255, 51, 0.55);
   text-transform: none;
 }
 @media (max-width: 768px) {
@@ -328,12 +512,41 @@ body.glitching::after {
 </style>
 <script type="text/javascript">
   var totalCount = 29;
-  var cycleInterval = 4000; // Change image every 4 seconds
+  // the screen glitch (and the bg swap it drives) fires on an irregular gap:
+  // never sooner than this floor, often longer, so it's spaced out and never
+  // on a predictable beat. see scheduleGlitch().
+  var GLITCH_MIN = 4000;     // floor — no sooner than 4s
+  var GLITCH_SPREAD = 7000;  // extra random 0–7s on top → 4–11s, biased short-ish
+
+  // preload the next tile so the swap never shows a bare background.
+  // hold one decoded image ahead; swap to it, then queue the one after.
+  var nextNum = Math.ceil(Math.random() * totalCount);
+  var nextImg = new Image();
+  nextImg.src = 'images/glitch/' + nextNum + '.webp';
 
   function ChangeIt() {
-    var num = Math.ceil(Math.random() * totalCount);
-    document.body.style.backgroundImage = 'url(images/glitch/' + num + '.png)';
+    var newUrl = 'url(images/glitch/' + nextNum + '.webp)';
+    var fade = document.getElementById('bg-fade');
+    var oldUrl = document.body.style.backgroundImage;
+
+    // crossfade: park the OLD image on the underlay (snap, no transition),
+    // swap the body to the NEW image instantly, then dissolve the underlay out.
+    if (fade && oldUrl) {
+      fade.style.backgroundImage = oldUrl;
+      fade.classList.remove('done');
+      fade.classList.add('fading');           // visible, old image, no transition
+      void fade.offsetWidth;                   // flush so the next change animates
+      document.body.style.backgroundImage = newUrl;
+      fade.classList.remove('fading');
+      fade.classList.add('done');              // fade old image away over 0.7s
+    } else {
+      document.body.style.backgroundImage = newUrl;
+    }
     document.body.style.backgroundRepeat = "repeat";
+
+    nextNum = Math.ceil(Math.random() * totalCount);
+    nextImg = new Image();
+    nextImg.src = 'images/glitch/' + nextNum + '.webp';
   }
 
   var WHISPERS = [
@@ -342,14 +555,8 @@ body.glitching::after {
   ];
 
   function glitchTransition() {
-    // Add glitch effect
+    // Add the (now gentle) glitch edge. Content no longer flashes.
     document.body.classList.add('glitching');
-
-    // Also flash the content
-    var inner = document.querySelector('.inner');
-    if (inner) {
-      inner.classList.add('glitch-flash');
-    }
 
     // 3% chance: the glitch whispers an accusation (120ms, gone before you can read it)
     if (Math.random() < 0.03) {
@@ -368,25 +575,97 @@ body.glitching::after {
       ChangeIt();
     }, 150);
 
-    // Remove glitch effect after animation completes
+    // Remove glitch burst after the 0.35s tear completes
     setTimeout(function() {
       document.body.classList.remove('glitching');
-      if (inner) {
-        inner.classList.remove('glitch-flash');
+    }, 360);
+  }
+
+  // fire a glitch, then re-arm with a fresh random gap (≥ GLITCH_MIN). using a
+  // self-rescheduling timeout instead of setInterval is what makes it irregular.
+  function scheduleGlitch() {
+    var gap = GLITCH_MIN + Math.random() * GLITCH_SPREAD;
+    setTimeout(function() {
+      glitchTransition();
+      scheduleGlitch();
+    }, gap);
+  }
+
+  // the title's quiet, irregular twitch. CSS animations are strictly periodic,
+  // so the "inconsistent timing" comes from JS: re-arm with a random 6–18s gap
+  // after each burst. removing+reflow+re-adding the class lets it fire again.
+  function startTitleGlitch() {
+    var h1 = document.querySelector('.header-box h1');
+    if (!h1) return;
+    var reduce = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    function tick() {
+      h1.classList.remove('aberrate');
+      void h1.offsetWidth;            // reflow so the class re-add restarts the anim
+      h1.classList.add('aberrate');
+      setTimeout(tick, 6000 + Math.random() * 12000);   // 6–18s, irregular
+    }
+    setTimeout(tick, 4000 + Math.random() * 6000);       // first one after a beat
+  }
+
+  // CRT vertical-roll, behaving like real v-sync drift: the picture is LOCKED
+  // (no band) most of the time, then drifts into an "episode" of a few rolls at
+  // varying speed, then locks again. Nothing about it is on a fixed clock.
+  function startCrtRoll() {
+    var roll = document.getElementById('crt-roll');
+    if (!roll) return;
+    var reduce = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    var passesLeft = 0;   // rolls remaining in the current drift episode
+
+    function onePass() {
+      // each pass picks its own speed: a drifting tube rolls unevenly, and a
+      // band that's nearly locked crawls slowly (3.5s) vs a fast drift (1.6s).
+      var dur = 1.6 + Math.random() * 1.9;        // 1.6–3.5s per sweep
+      roll.style.setProperty('--roll-dur', dur.toFixed(2) + 's');
+      roll.classList.remove('rolling');
+      void roll.offsetWidth;                       // reflow → restart the sweep
+      roll.classList.add('rolling');
+    }
+
+    roll.addEventListener('animationend', function () {
+      roll.classList.remove('rolling');            // band leaves the screen
+      passesLeft--;
+      if (passesLeft > 0) {
+        // mid-episode: small irregular gap, sometimes back-to-back rolls
+        setTimeout(onePass, Math.random() * 600);
+      } else {
+        scheduleEpisode();                         // lock, then drift again later
       }
-    }, 300);
+    });
+
+    function scheduleEpisode() {
+      // locked/stable stretch — long and irregular (8–25s) so the band is a
+      // rare visitor, not a metronome.
+      var lockedFor = 8000 + Math.random() * 17000;   // 8–25s stable
+      setTimeout(function () {
+        passesLeft = 1 + Math.floor(Math.random() * 3);  // 1–3 rolls this drift
+        onePass();
+      }, lockedFor);
+    }
+
+    scheduleEpisode();
   }
 
   // Start the cycle after page loads
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      ChangeIt();
-      setInterval(glitchTransition, cycleInterval);
-    });
-  } else {
-    // DOM already loaded, run immediately
+  function initFx() {
     ChangeIt();
-    setInterval(glitchTransition, cycleInterval);
+    scheduleGlitch();      // irregular gaps instead of a fixed 4s interval
+    startTitleGlitch();
+    startCrtRoll();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFx);
+  } else {
+    initFx();
   }
 </script>
 
@@ -402,6 +681,7 @@ body.glitching::after {
 
 </head>
 <body>
+  <div id="bg-fade"></div>
   <div id="whisper"></div>
   <div class="outer">
     <div class="middle">
@@ -429,7 +709,7 @@ body.glitching::after {
               </p>
             </div>
             <div class="mado-box">
-              <a class="mado" href="PLAY.html"><img class="mado" src="images/mado.gif" alt="Mado character - link to games page"></a>
+              <a class="mado" href="PLAY.html"><img class="mado" src="images/mado.gif" width="171" height="159" decoding="async" alt="Mado character - link to games page"></a>
             </div>
           </div>
         </div>
@@ -465,271 +745,543 @@ body.glitching::after {
     </div>
   </div>
 
-  <!-- p5.js — the Processing family's web engine — powers the opus sigils above -->
-  <script src="https://cdn.jsdelivr.net/npm/p5@1/lib/p5.min.js"></script>
+  <!-- CRT glass: fixed overlays in front of all content (see CRT shell CSS) -->
+  <div id="crt-flicker"></div>
+  <div id="crt-roll"></div>
+  <div id="crt-scanlines"></div>
+  <div id="crt-vignette"></div>
+  <div id="crt-bulge"></div>
+
+  <!-- p5.js — the Processing family's web engine — powers the opus sigils above.
+       vendored (files/vendor/p5.min.js, v1.11.10) so the page never depends on a
+       third-party CDN being up — and async so it never blocks render. -->
+  <script async id="p5lib" src="files/vendor/p5.min.js"></script>
   <script>
   (function () {
     "use strict";
-    if (typeof p5 === "undefined") return;   // links still work without it
+    // p5 loads async, so it may not be ready when this runs. defer boot() until
+    // p5 is defined — via its <script> load event, or immediately if already there.
+    // links still work either way; only the decorative sigils wait on p5.
+    function whenP5(cb) {
+      if (typeof p5 !== "undefined") return cb();
+      var s = document.getElementById("p5lib");
+      if (s) s.addEventListener("load", function () {
+        if (typeof p5 !== "undefined") cb();
+      });
+    }
 
-    var GREEN = [115, 176, 54];
-    var PURP  = [22, 1, 33];
+    /* ====================================================================
+       SHARED VISUAL LANGUAGE for the opus sigils.
+       The five sketches differ in WHAT they draw, never in HOW it looks:
+       one green, depth from opacity alone, plus a single lighter-green accent
+       for "live" moments (the one allowed brightness shift — CRT phosphor pop).
+       Every color call in every sketch must go through g()/gf()/accent().
+       ==================================================================== */
+    var GREEN  = [51, 255, 51];     // the one hue. #33FF33.
+    var ACCENT = [175, 255, 140];   // lighter phosphor green — accents ONLY.
+    var PURP   = [0, 17, 0];        // the dark phosphor backdrop.
+
+    // opacity tiers — the whole vocabulary of depth. nothing else.
+    var A_FAINT = 45;     // scaffolding / ghosts
+    var A_STRUCT = 110;   // structure: edges, frames, idle nodes
+    var A_ACTIVE = 190;   // the live layer: active nodes, current glyph
+    // accents use ACCENT@255 via accent().
+
+    function gstroke(p, a, w) { p.stroke(GREEN[0], GREEN[1], GREEN[2], a); if (w != null) p.strokeWeight(w); }
+    function gfill(p, a)      { p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], a); }
+    function accent(p, a)     { p.noStroke(); p.fill(ACCENT[0], ACCENT[1], ACCENT[2], a == null ? 255 : a); }
+
     var reduce = window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // square box (~1:1), same small card footprint as before. the goal isn't
+    // bigger canvases — it's BUSIER ones: each sketch fills this square densely,
+    // edge to edge, instead of floating a sparse diagram in empty space.
     function box(holder) {
       var w = Math.max(60, Math.floor(holder.clientWidth));
-      var h = Math.max(80, Math.min(120, Math.round(w * 0.66)));
+      var h = w;
       return { w: w, h: h };
     }
+    // shared fade rhythm — same trail decay everywhere so the five "breathe"
+    // alike. higher a = shorter trails. one constant, applied by all.
+    var TRAIL_A = 60;
     function trail(p, W, H, a) {
       p.noStroke();
-      p.fill(PURP[0], PURP[1], PURP[2], a);
+      p.fill(PURP[0], PURP[1], PURP[2], a == null ? TRAIL_A : a);
       p.rect(0, 0, W, H);
     }
 
-    /* simulations: stocks (points) and flows (lines), a live feedback loop */
+    /* simulations: an economy-flow node graph — a SOURCE pumps resources down
+       directed edges into POOLS that fill like reservoirs, through a CONVERTER,
+       out a DRAIN, with a feedback edge looping back. packets = the live accent */
     function sim(p, holder, st) {
-      var W, H, t = 0, spawnT = 0;
-      var N = [[0.12, 0.50], [0.38, 0.26], [0.62, 0.50], [0.38, 0.78], [0.88, 0.50]];
-      var E = [[0, 1], [1, 2], [2, 4], [2, 3], [3, 0]];  // ...and a loop back to the source
-      var lvl = [1, 0, 0, 0, 0];
-      var packets = [];
-      function px(i) { return N[i][0] * W; }
-      function py(i) { return N[i][1] * H; }
-      function step() {
-        t += 0.03 + st.k * 0.03;
-        lvl[0] = 0.7 + 0.3 * Math.sin(t);
-        for (var i = 1; i < 5; i++) lvl[i] *= 0.96;
-        if (spawnT-- <= 0) {
-          var emit = 1 + Math.floor(st.k * 2.5);
-          for (var m = 0; m < emit; m++) {
-            var e = E[Math.floor(p.random(E.length))];
-            if (lvl[e[0]] > 0.2) { packets.push({ e: e, t: 0 }); lvl[e[0]] *= 0.75; }
+      var W, H, t = 0, spawnT = 0, rebuildT = 0;
+      // typed nodes laid out as a clear top→bottom economy with focal hierarchy.
+      // kind: 0 source(pump) 1 pool(reservoir/stock) 2 converter 3 drain
+      // arrangement + connections are randomized on a timer (see build()); the
+      // economy stays top→bottom (source up top, drain low) so the anatomy reads.
+      var N, E, FB, lvl, src, packets = [];
+      // build a NEW random node layout + a GUARANTEED-CONNECTED edge set.
+      // connectivity proof: we first lay a random SPANNING TREE (every node after
+      // the first links to a random already-placed node), so the graph is one
+      // connected component by construction — no node can have zero edges. THEN
+      // we add a few extra random edges for loops/density, plus a feedback loop.
+      function build() {
+        var n = 6 + Math.floor(p.random(2));            // 6–7 nodes
+        N = [];
+        // place a node by rejection sampling: keep ≥ MIND (normalized) from every
+        // existing node so they never clump. fall back to the farthest-from-all
+        // candidate after a cap, so a tight square can't infinite-loop.
+        var MIND = 0.26;
+        function place(x0, xr, y0, yr, k) {
+          var best = null, bestD = -1;
+          for (var tries = 0; tries < 24; tries++) {
+            var cx = x0 + p.random() * xr, cy = y0 + p.random() * yr, near = 1e9;
+            for (var q = 0; q < N.length; q++) {
+              var dx = cx - N[q].x, dy = cy - N[q].y, d = Math.sqrt(dx * dx + dy * dy);
+              if (d < near) near = d;
+            }
+            if (near >= MIND) { N.push({ x: cx, y: cy, k: k }); return; }
+            if (near > bestD) { bestD = near; best = { x: cx, y: cy, k: k }; }
           }
-          spawnT = Math.round(13 - st.k * 9);
+          N.push(best);                                  // best effort if nothing cleared MIND
+        }
+        // SOURCE: top, roughly centered, inset so its ring never clips the top.
+        N.push({ x: 0.32 + p.random() * 0.36, y: 0.16 + p.random() * 0.08, k: 0 });
+        // interior nodes: pools/converters scattered in the mid band, spaced out.
+        for (var i = 1; i < n - 1; i++)
+          place(0.12, 0.76, 0.34, 0.42, p.random() < 0.32 ? 2 : 1);  // mostly pools, some converters
+        // DRAIN: low, so flow visibly ends at the bottom (≥1 drain guaranteed).
+        place(0.16, 0.68, 0.80, 0.08, 3);
+        src = 0;
+        // --- spanning tree: connect each new node to a random earlier node ---
+        E = [];
+        for (var j = 1; j < N.length; j++) {
+          var par = Math.floor(p.random(j));            // some already-placed node
+          // orient edges generally downhill (source→drain) for a sensible economy
+          E.push(N[par].y <= N[j].y ? [par, j] : [j, par]);
+        }
+        // --- extra edges for loops/density (a handful, no self-loops) ---
+        var extra = 1 + Math.floor(p.random(3));
+        for (var x = 0; x < extra; x++) {
+          var a = Math.floor(p.random(N.length)), b = Math.floor(p.random(N.length));
+          if (a !== b) E.push(N[a].y <= N[b].y ? [a, b] : [b, a]);
+        }
+        // --- feedback loop: some downstream node back up to the source ---
+        E.push([N.length - 1, src]); FB = E.length - 1;
+        // self-check: every node must appear in at least one edge (spanning tree
+        // guarantees this; guard kept as a tripwire if build() is ever changed).
+        var deg = []; for (var d = 0; d < N.length; d++) deg[d] = 0;
+        for (var e = 0; e < E.length; e++) { deg[E[e][0]]++; deg[E[e][1]]++; }
+        for (var d2 = 0; d2 < N.length; d2++) if (deg[d2] === 0) E.push([d2, src]); // never orphan
+        lvl = []; for (var l = 0; l < N.length; l++) lvl[l] = (l === src ? 1 : 0);
+        packets = [];
+      }
+      function nx(i) { return N[i].x * W; }
+      function ny(i) { return N[i].y * H; }
+      function step() {
+        t += 0.03 + st.k * 0.035;
+        // periodic full rebuild: NEW layout + NEW connected edge set every ~8–14s
+        // (240–420 frames @30fps), hover shortens it. trail redraws over the reset.
+        if (rebuildT-- <= 0) { build(); rebuildT = Math.round((240 + p.random(180)) * (1 - st.k * 0.4)); }
+        lvl[src] = 0.78 + 0.22 * Math.sin(t * 1.6);  // the pump pulses
+        for (var i = 0; i < N.length; i++)            // stocks bleed down slowly
+          if (i !== src) lvl[i] *= (N[i].k === 3 ? 0.90 : 0.985);  // drain leaks faster
+        if (spawnT-- <= 0) {
+          var emit = 1 + Math.floor(st.k * 3);
+          for (var m = 0; m < emit; m++) {
+            var ei = Math.floor(p.random(E.length)), e = E[ei];
+            if (lvl[e[0]] > 0.18) { packets.push({ e: e, ei: ei, t: 0 }); lvl[e[0]] *= 0.82; }
+          }
+          spawnT = Math.round(9 - st.k * 6);
         }
         for (var k = packets.length - 1; k >= 0; k--) {
-          var pk = packets[k]; pk.t += 0.04 + st.k * 0.05;
-          if (pk.t >= 1) { lvl[pk.e[1]] = Math.min(1.3, lvl[pk.e[1]] + 0.5); packets.splice(k, 1); }
+          var pk = packets[k]; pk.t += 0.035 + st.k * 0.05;
+          if (pk.t >= 1) {                            // packet arrives → fills the stock
+            var dst = pk.e[1];
+            if (N[dst].k !== 3) lvl[dst] = Math.min(1, lvl[dst] + 0.34);
+            packets.splice(k, 1);
+          }
         }
       }
+      function arrow(x1, y1, x2, y2, a, w) {           // directed edge w/ midpoint head
+        gstroke(p, a, w); p.line(x1, y1, x2, y2);
+        var mx = p.lerp(x1, x2, 0.58), my = p.lerp(y1, y2, 0.58);
+        var ang = Math.atan2(y2 - y1, x2 - x1), s = 3.2 + st.k * 1.2;
+        p.push(); p.translate(mx, my); p.rotate(ang);
+        p.line(0, 0, -s, -s * 0.7); p.line(0, 0, -s, s * 0.7); p.pop();
+      }
       function render() {
+        // EDGES — drawn full-opacity every frame (structure). feedback is dashed-feel
         for (var i = 0; i < E.length; i++) {
-          p.stroke(GREEN[0], GREEN[1], GREEN[2], 70 + st.k * 150); p.strokeWeight(1 + st.k * 0.8);
-          p.line(px(E[i][0]), py(E[i][0]), px(E[i][1]), py(E[i][1]));
+          var fb = (i === FB);
+          arrow(nx(E[i][0]), ny(E[i][0]), nx(E[i][1]), ny(E[i][1]),
+                (fb ? A_FAINT : A_STRUCT) + st.k * 55, 1 + st.k * 0.6);
         }
-        p.noStroke();
+        // PACKETS — the one live accent, resources in transit along edges
         for (var k = 0; k < packets.length; k++) {
-          var pk = packets[k];
-          p.fill(170, 255, 120, 230);
-          p.circle(p.lerp(px(pk.e[0]), px(pk.e[1]), pk.t), p.lerp(py(pk.e[0]), py(pk.e[1]), pk.t), 4);
+          var pk = packets[k], e = pk.e;
+          accent(p, 235);
+          p.circle(p.lerp(nx(e[0]), nx(e[1]), pk.t), p.lerp(ny(e[0]), ny(e[1]), pk.t), 3.2 + st.k * 1.8);
         }
-        for (var i = 0; i < 5; i++) {
-          var r = 4 + lvl[i] * 7;
-          p.noFill(); p.stroke(GREEN[0], GREEN[1], GREEN[2], 200); p.strokeWeight(1.4);
-          p.circle(px(i), py(i), r * 2);
-          p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 60 + lvl[i] * 150);
-          p.circle(px(i), py(i), r);
+        // NODES — typed anatomy, each at full structure opacity every frame
+        for (var i = 0; i < N.length; i++) {
+          var n = N[i], x = nx(i), y = ny(i), L = lvl[i];
+          if (n.k === 1 || n.k === 3) {               // POOL / DRAIN: a tank that fills
+            var bw = 13 + (n.k === 1 ? 4 : 0), bh = 16;
+            p.noFill(); gstroke(p, A_STRUCT, 1.4);
+            p.rect(x - bw / 2, y - bh / 2, bw, bh, 1);
+            gfill(p, A_FAINT + L * (A_ACTIVE - A_FAINT));         // reservoir fill rises
+            p.rect(x - bw / 2 + 1, y + bh / 2 - 1 - (bh - 2) * L, bw - 2, (bh - 2) * L);
+            if (n.k === 3) { gstroke(p, A_STRUCT, 1.4); p.line(x - bw / 2, y + bh / 2 + 3, x + bw / 2, y + bh / 2 + 3); } // drain lip
+          } else if (n.k === 2) {                     // CONVERTER: a diamond gate
+            var s = 8 + L * 4;
+            p.noFill(); gstroke(p, A_ACTIVE, 1.5);
+            p.quad(x, y - s, x + s, y, x, y + s, x - s, y);
+            gfill(p, A_FAINT + L * 130); p.circle(x, y, 3 + L * 3);
+          } else {                                    // SOURCE: pulsing concentric pump
+            // cap the outer ring to the available top margin so it never clips
+            var maxR = Math.max(6, y - 3);
+            var r = Math.min(8 + L * 5, maxR);
+            p.noFill(); gstroke(p, A_ACTIVE, 1.6); p.circle(x, y, r * 2);
+            gstroke(p, A_STRUCT, 1); p.circle(x, y, r);
+            gfill(p, A_FAINT + L * 145); p.circle(x, y, 4 + L * 4);
+          }
         }
       }
       p.setup = function () {
         var b = box(holder); W = b.w; H = b.h;
         p.createCanvas(W, H); p.frameRate(30);
-        p.background(PURP[0], PURP[1], PURP[2]);
-        if (reduce) { step(); render(); p.noLoop(); }
+        p.background(PURP[0], PURP[1], PURP[2]); build();
+        rebuildT = Math.round(240 + p.random(180));
+        if (reduce) { for (var i = 1; i < N.length; i++) lvl[i] = N[i].k === 3 ? 0.2 : 0.6; render(); p.noLoop(); }
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, 55 - st.k * 15); step(); render();
+        trail(p, W, H, TRAIL_A - st.k * 18); step(); render();   // shared rhythm
       };
     }
 
-    /* pointliner: an outline that grows itself — nodes and hierarchy */
+    /* pointliner: a hierarchical outliner — indented nested bullets with
+       checkboxes that tick done/open, tags, parent/child spines */
     function outline(p, holder, st) {
-      var W, H, rows = 6, pad = 10, addT = 0, blink = 0, list;
-      function reset() { list = [{ depth: 0, parent: -1 }]; }
-      function add() {
-        if (list.length >= rows) { reset(); return; }
-        var tries = 0, pi;
-        do { pi = list.length - 1 - Math.floor(Math.abs(p.randomGaussian(0, 1.5))); tries++; }
-        while ((pi < 0 || !list[pi] || list[pi].depth >= 3) && tries < 8);
-        if (pi < 0 || !list[pi]) pi = 0;
-        list.push({ depth: Math.min(3, list[pi].depth + 1), parent: pi });
+      var W, H, rows = 9, pad = 9, blink = 0, list, tickT = 0, rebuildT = 0;   // 9 rows fill the square top-to-bottom
+      function build() {                                 // a random but valid indented outline walk
+        // generate a fresh depth sequence: row 0 is root (depth 0); each next row
+        // is at most one deeper than the previous (a legal outline step), so every
+        // non-root has a shallower-or-equal-minus-one ancestor above it.
+        list = [];
+        var prev = 0;
+        for (var i = 0; i < rows; i++) {
+          var d;
+          if (i === 0) d = 0;
+          else {
+            var r = p.random();
+            if (r < 0.34) d = prev + 1;                  // go deeper (one step max)
+            else if (r < 0.64) d = prev;                 // same level
+            else d = Math.max(0, prev - 1 - Math.floor(p.random(2))); // pop out 1–2
+          }
+          d = Math.min(d, 2);                            // cap at 3 indent rails (0..2)
+          var par = -1; for (var j = i - 1; j >= 0; j--) if (list[j].depth === d - 1) { par = j; break; }
+          list.push({ depth: d, parent: par, w: 0.34 + p.random() * 0.5,
+                      tag: p.random() < 0.4, done: p.random() < 0.45, fill: 0 });
+          prev = d;
+        }
       }
       function rowY(i) { return pad + i * ((H - 2 * pad) / (rows - 1)); }
-      function nodeX(d) { return pad + d * (W * 0.16); }
+      var IND, box2;                                     // indent step + checkbox size in px
+      function nodeX(d) { return pad + 4 + d * IND; }
       function render() {
+        IND = (W - 2 * pad) * 0.22;
+        box2 = Math.max(4, (H - 2 * pad) / rows * 0.42);
+        // faint indent guide rails — vertical structure edge to edge
+        for (var g = 0; g <= 2; g++) { gstroke(p, A_FAINT, 1); var gx = nodeX(g) - 5; p.line(gx, pad, gx, H - pad); }
         for (var i = 0; i < list.length; i++) {
-          var d = list[i].depth, x = nodeX(d), y = rowY(i), par = list[i].parent;
-          if (par >= 0) {
-            var pxx = nodeX(list[par].depth), pyy = rowY(par);
-            p.stroke(GREEN[0], GREEN[1], GREEN[2], 90 + st.k * 140); p.strokeWeight(1);
-            p.line(pxx, pyy + 4, pxx, y);
-            p.line(pxx, y, x - 3, y);
+          var it = list[i], d = it.depth, x = nodeX(d), y = rowY(i), par = it.parent;
+          if (par >= 0) {                               // elbow connector parent→child spine
+            var pgx = nodeX(list[par].depth);
+            gstroke(p, A_STRUCT + st.k * 60, 1);
+            p.line(pgx, rowY(par) + box2 * 0.5, pgx, y); // spine down from parent
+            p.line(pgx, y, x - 2, y);                    // elbow into this row
           }
-          p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 220);
-          var bs = 3 + st.k * 1.6;
-          p.rect(x - (bs - 3) / 2, y - bs / 2, bs, bs);
+          // checkbox: empty frame; fills in (animated) when done
+          gstroke(p, A_STRUCT + st.k * 70, 1.2); p.noFill();
+          p.rect(x - box2 / 2, y - box2 / 2, box2, box2, 1);
+          if (it.fill > 0.02) {                          // check tick drawn as a fill + glyph
+            gfill(p, A_ACTIVE * it.fill);
+            p.rect(x - box2 / 2 + 1, y - box2 / 2 + 1, (box2 - 2) * it.fill, box2 - 2);
+          }
+          // the "text" bar to the right of the box
+          var x0 = x + box2 / 2 + 4, tw = (W - pad - x0 - (it.tag ? 9 : 0));
+          gstroke(p, A_STRUCT + st.k * 50, 1.4);
+          if (tw > 1) p.line(x0, y, x0 + tw * it.w, y);  // line of text
+          if (it.tag) { gfill(p, A_FAINT + st.k * 60); p.circle(W - pad - 3, y, 4); } // a tag pip
         }
-        if ((blink % 30) < 18) {
-          var li = list.length - 1;
-          p.fill(170, 255, 120, 220);
-          p.rect(nodeX(list[li].depth) + 7, rowY(li) - 4, 4, 8);
+        // active row marker: accent caret on whichever row is currently ticking
+        if (act >= 0 && (blink % 30) < 20) {
+          var ay = rowY(act), ax = nodeX(list[act].depth) - box2 / 2 - 5;
+          accent(p, 230); p.triangle(ax - 4, ay - 3, ax - 4, ay + 3, ax, ay);
         }
       }
+      var act = -1;                                      // row currently being toggled = the live element
       p.setup = function () {
         var b = box(holder); W = b.w; H = b.h;
         p.createCanvas(W, H); p.frameRate(30);
-        p.background(PURP[0], PURP[1], PURP[2]); reset();
-        if (reduce) { for (var i = 0; i < 5; i++) add(); render(); p.noLoop(); }
+        p.background(PURP[0], PURP[1], PURP[2]); build();
+        rebuildT = Math.round(240 + p.random(120));
+        if (reduce) { for (var i = 0; i < rows; i++) list[i].fill = list[i].done ? 1 : 0; render(); p.noLoop(); }
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, 70); blink += 1 + Math.round(st.k * 2);
-        if (addT-- <= 0) { add(); addT = Math.round(26 - st.k * 20); }
+        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);   // shared rhythm
+        // periodic full rebuild: a NEW random tree shape every ~8–12s (240–360
+        // frames), hover shortens it. checkbox ticking continues between rebuilds.
+        if (rebuildT-- <= 0) { build(); act = -1; rebuildT = Math.round((240 + p.random(120)) * (1 - st.k * 0.4)); }
+        for (var i = 0; i < list.length; i++)            // ease each checkbox toward its done state
+          list[i].fill += ((list[i].done ? 1 : 0) - list[i].fill) * 0.18;
+        if (tickT-- <= 0) {                              // periodically toggle one item's checkbox
+          act = Math.floor(p.random(list.length)); list[act].done = !list[act].done;
+          tickT = Math.round(20 - st.k * 13);
+        }
         render();
       };
     }
 
-    /* laserstorm: units in formation, lines of fire */
+    /* laserstorm: a wargame ROSTER / army-list builder — unit rows with
+       stat-line bars filling in (Speed/Aim/Assault/Save/Morale) and a
+       ticking points total recalculating as the list assembles */
     function laser(p, holder, st) {
-      var W, H, units = [], beams = [], volleyT = 0, form = 0, COLS = 4, ROWS = 3;
-      function shape(i, mode) {
-        var c = i % COLS, r = Math.floor(i / COLS);
-        if (mode === 0) return [0.12 + c * 0.10, 0.22 + r * 0.28];
-        if (mode === 1) return [0.10 + r * 0.12, 0.16 + c * 0.16 + r * 0.05];
-        return [0.14 + (i / (COLS * ROWS)) * 0.42, 0.5 + Math.sin(i) * 0.27];
-      }
-      function fire() {
-        var bursts = 1 + Math.floor(st.k * 3);
-        for (var b = 0; b < bursts; b++) {
-          var src = Math.floor(p.random(units.length)), n = 3 + Math.floor(p.random(3));
-          for (var k = 0; k < n; k++) beams.push({ s: src, tx: 0.78 + p.random(0.18), ty: p.random(0.15, 0.85), life: 1 });
+      var W, H, rows = 5, stats = 5, pad = 9, blink = 0, list, addT = 0, pts = 0, ptsT = 0, rebuildT = 0;
+      // force designations stamped in the header — a random call-sign per roster
+      var TITLES = ["TF-ZNT", "VANGUARD", "9TH LEGION", "IRON PACT", "NOVA CELL",
+                    "BLACK SUN", "HELLBORE", "STORMGUARD", "EXO-3", "RECKONING"];
+      var title = "";
+      function build() {                                 // a library of unit rows, each with a stat-line
+        list = [];
+        title = TITLES[Math.floor(p.random(TITLES.length))];
+        for (var i = 0; i < rows; i++) {
+          var s = []; for (var j = 0; j < stats; j++) s.push({ tgt: 0.25 + p.random() * 0.7, v: 0 });
+          list.push({ stats: s, cost: 8 + Math.floor(p.random(40)), reveal: 0 });
         }
+      }
+      // reserve a clear header band at top (holds the force title); rows live
+      // BELOW it, each centered in its band so stat bars never reach the header.
+      var HEAD = 14, FOOT = 8;                          // header + footer bands
+      function rowsTop() { return pad + HEAD; }
+      function rowsBot() { return H - pad - FOOT; }
+      function rowH() { return (rowsBot() - rowsTop()) / rows; }
+      function rowY(i) { return rowsTop() + (i + 0.5) * rowH(); }
+      function render() {
+        var rh = rowH();
+        var lx = pad, lw = W - 2 * pad;
+        var statW = lw * 0.62, barX = lx + lw * 0.30, cell = statW / stats;
+        // force title stamped in the header band, with a rule beneath it
+        gfill(p, A_ACTIVE);
+        p.textFont("monospace"); p.textAlign(p.LEFT, p.CENTER);
+        p.textSize(Math.max(7, Math.min(10, lw * 0.085)));
+        p.text(title, lx, pad + HEAD * 0.42);
+        gstroke(p, A_STRUCT, 1); p.line(lx, pad + HEAD - 2, lx + lw, pad + HEAD - 2);
+        for (var i = 0; i < list.length; i++) {
+          var it = list[i], y = rowY(i), rev = it.reveal;
+          // the roster STRUCTURE is drawn at full opacity EVERY frame — it's a
+          // static spec sheet, so the shared trail would erase it if we faded it
+          // in. only the stat-bar FILL VALUES animate (that's the "live" layer).
+          gstroke(p, A_STRUCT + st.k * 50, 1.4);
+          p.line(lx, y, lx + lw * 0.22, y);                               // unit name tab
+          for (var j = 0; j < stats; j++) {
+            var bx = barX + j * cell, bw = cell * 0.6, bh = rh * 0.5;
+            var by = y - bh / 2, v = it.stats[j].v;
+            gstroke(p, A_STRUCT, 1); p.noFill(); p.rect(bx, by, bw, bh);  // stat slot (always visible)
+            gfill(p, A_ACTIVE); p.rect(bx, by + bh * (1 - v), bw, bh * v); // filled value
+          }
+          gstroke(p, A_ACTIVE, 1.6); p.line(lx + lw - lw * 0.10, y, lx + lw, y);  // cost figure
+        }
+        // running points TOTAL bar in the footer band — the live, accenting element
+        var ty = H - pad - FOOT / 2 + 2, frac = Math.min(1, pts / ptsMax), th = 2 + st.k * 1.2;
+        gstroke(p, A_FAINT, 1); p.line(lx, ty, lx + lw, ty);     // empty total track
+        accent(p, 230); p.rect(lx, ty - th / 2, lw * frac, th);  // total fill: the live accent layer
+        accent(p, 230); p.circle(lx + lw * frac, ty, 3.5 + st.k * 1.5); // ticking total readout head
+      }
+      var ptsMax = 1, built = 0;
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]); build();
+        rebuildT = Math.round(300 + p.random(120));
+        ptsMax = 0; for (var i = 0; i < list.length; i++) ptsMax += list[i].cost;
+        if (reduce) {
+          for (var i = 0; i < rows; i++) { list[i].reveal = 1; for (var j = 0; j < stats; j++) list[i].stats[j].v = list[i].stats[j].tgt; }
+          pts = ptsMax; render(); p.noLoop();
+        }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);   // shared rhythm
+        // the whole roster is always present; every stat bar eases toward its
+        // target continuously, so the spec sheet is alive across all rows.
+        for (var i = 0; i < list.length; i++) {
+          list[i].reveal += (1 - list[i].reveal) * 0.16;
+          for (var j = 0; j < stats; j++) list[i].stats[j].v += (list[i].stats[j].tgt - list[i].stats[j].v) * 0.16;
+        }
+        // periodic FULL roster rebuild: new title + all-new unit rows every
+        // ~10–14s (300–420 frames), hover shortens it. rows re-reveal from 0 and
+        // the points total re-ticks toward the new sum.
+        if (rebuildT-- <= 0) {
+          build(); ptsMax = 0; for (var i = 0; i < list.length; i++) ptsMax += list[i].cost;
+          rebuildT = Math.round((300 + p.random(120)) * (1 - st.k * 0.4));
+        }
+        // points total ticks toward the sum of all units' costs (the live readout)
+        var goal = 0; for (var i = 0; i < list.length; i++) goal += list[i].cost * list[i].reveal;
+        pts += (goal - pts) * 0.12;
+        if (addT-- <= 0) {            // periodically re-roll one unit's stats — the roster keeps "rebuilding"
+          var ri = Math.floor(p.random(rows));
+          for (var j = 0; j < stats; j++) list[ri].stats[j].tgt = 0.25 + p.random() * 0.7;
+          list[ri].cost = 8 + Math.floor(p.random(40));
+          ptsMax = 0; for (var i = 0; i < list.length; i++) ptsMax += list[i].cost;
+          addT = Math.round(26 - st.k * 17);
+        }
+        render();
+      };
+    }
+
+    /* termdecks: terminal-reference FLASHCARDS — a grid of cards that FLIP
+       front↔back to reveal answers; the flip is the signature motion */
+    function deck(p, holder, st) {
+      var W, H, COLS = 3, ROWS = 3, pad = 9, blink = 0, cards, flipT = 0, rebuildT = 0;
+      var FRONT = "λ$#>/{}*+!?;:&|^~".split(""), BACK = "·=─•◦▪▫".split("");
+      function build() {
+        cards = [];
+        for (var i = 0; i < COLS * ROWS; i++)
+          cards.push({ flip: 0, face: 0,                 // flip 0..1 progress; face 0=front 1=back
+                       fg: FRONT[Math.floor(p.random(FRONT.length))],
+                       bg: BACK[Math.floor(p.random(BACK.length))] });
+      }
+      var cw, chh, gx, gy;
+      function geom() {
+        var aw = W - 2 * pad, ah = H - 2 * pad;
+        gx = aw / COLS; gy = ah / ROWS;
+        cw = gx * 0.78; chh = gy * 0.82;
+      }
+      function cardAt(cx, cy, fl, c, aa, live) {
+        // fl 0..1 flip: scale x by |cos| to fake a 3D card turn; swap face at midpoint
+        var sx = Math.abs(Math.cos(fl * Math.PI)), back = fl > 0.5;
+        p.push(); p.translate(cx, cy); p.scale(Math.max(0.04, sx), 1);
+        gfill(p, aa * 0.12); p.rect(-cw / 2, -chh / 2, cw, chh, 3);     // solid-ish fill
+        p.noFill(); gstroke(p, aa, 1.2); p.rect(-cw / 2, -chh / 2, cw, chh, 3);
+        gstroke(p, aa * 0.55, 1); p.line(-cw / 2 + 3, -chh / 2 + chh * 0.30, cw / 2 - 3, -chh / 2 + chh * 0.30); // title rule (at y=-0.20*chh)
+        // center the glyph in the LOWER region (line at -0.20*chh, bottom at +0.50*chh
+        // → midpoint +0.15*chh). sized so a tall '|' clears both the line and the
+        // card bottom with even breathing room.
+        gfill(p, aa); p.textSize(chh * 0.38); p.text(back ? c.bg : c.fg, 0, chh * 0.15); // the face glyph
+        p.pop();
+        if (live && sx < 0.18) { accent(p, 230); p.rect(cx - 1, cy - chh / 2, 2, chh); } // flip seam: live accent
       }
       function render() {
-        for (var i = 0; i < beams.length; i++) {
-          var bm = beams[i], u = units[bm.s];
-          p.stroke(255, 90, 70, 220 * bm.life); p.strokeWeight(2.2 * bm.life);
-          p.line(u.x * W, u.y * H, bm.tx * W, bm.ty * H);
-          p.stroke(255, 230, 200, 240 * bm.life); p.strokeWeight(0.8 * bm.life);
-          p.line(u.x * W, u.y * H, bm.tx * W, bm.ty * H);
-        }
-        for (var i = 0; i < units.length; i++) {
-          p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], 210);
-          p.push(); p.translate(units[i].x * W, units[i].y * H); p.rotate(p.PI / 4);
-          p.rect(-2.2, -2.2, 4.4, 4.4); p.pop();
+        geom();
+        for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+          var idx = r * COLS + c, cd = cards[idx];
+          var cx = pad + gx * (c + 0.5), cy = pad + gy * (r + 0.5);
+          var live = (idx === act && cd.flip > 0.01 && cd.flip < 0.99);
+          cardAt(cx, cy, cd.flip, cd, live ? 240 : A_ACTIVE, live);
         }
       }
+      var act = -1;                                      // the card mid-flip = the one live element
       p.setup = function () {
         var b = box(holder); W = b.w; H = b.h;
         p.createCanvas(W, H); p.frameRate(30);
         p.background(PURP[0], PURP[1], PURP[2]);
-        for (var i = 0; i < COLS * ROWS; i++) { var s = shape(i, 0); units.push({ x: s[0], y: s[1], tx: s[0], ty: s[1], ph: p.random(p.TWO_PI) }); }
+        p.textFont("monospace"); p.textAlign(p.CENTER, p.CENTER); build();
+        rebuildT = Math.round(300 + p.random(120));
         if (reduce) { render(); p.noLoop(); }
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, 60 - st.k * 18);
-        for (var i = 0; i < units.length; i++) {
-          var u = units[i];
-          u.x += (u.tx - u.x) * 0.05 + Math.cos(p.frameCount * 0.05 + u.ph) * 0.0006;
-          u.y += (u.ty - u.y) * 0.05 + Math.sin(p.frameCount * 0.05 + u.ph) * 0.0006;
+        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);   // shared rhythm
+        // periodic FULL grid reshuffle: a NEW glyph set every ~10–14s (300–420
+        // frames), hover shortens it. between rebuilds individual cards keep flipping.
+        if (rebuildT-- <= 0) { build(); act = -1; rebuildT = Math.round((300 + p.random(120)) * (1 - st.k * 0.4)); }
+        // advance the active flip toward its target face
+        if (act >= 0) {
+          var cd = cards[act], tgt = cd.face;
+          cd.flip += (tgt - cd.flip) * (0.20 + st.k * 0.12);
+          if (Math.abs(tgt - cd.flip) < 0.02) { cd.flip = tgt; act = -1; }
         }
-        for (var k = beams.length - 1; k >= 0; k--) { beams[k].life -= 0.06; if (beams[k].life <= 0) beams.splice(k, 1); }
-        if (volleyT-- <= 0) { fire(); volleyT = Math.round(42 - st.k * 36); }
-        if (form-- <= 0) { var m = Math.floor(p.random(3)); for (var i = 0; i < units.length; i++) { var s = shape(i, m); units[i].tx = s[0]; units[i].ty = s[1]; } form = 150; }
-        render();
-      };
-    }
-
-    /* termdecks: a deck deals cards across a terminal grid */
-    function deck(p, holder, st) {
-      var W, H, slots, flying = [], dealT = 0, blink = 0, full = 0, CAP = 4, cw = 0, chh = 0;
-      var GLY = "λ$#>/{}*+".split("");
-      function reset() { slots = []; }
-      function geom() { cw = W * 0.13; chh = cw * 1.4; }
-      function slotPos(i) { return [W * 0.42 + i * (W * 0.135), H * 0.5]; }
-      function cardAt(x, y, g, aa) {
-        p.stroke(GREEN[0], GREEN[1], GREEN[2], aa); p.strokeWeight(1); p.noFill();
-        p.rect(x - cw / 2, y - chh / 2, cw, chh, 2);
-        if (g) { p.noStroke(); p.fill(GREEN[0], GREEN[1], GREEN[2], aa); p.textSize(Math.max(8, cw * 0.5)); p.text(g, x, y); }
-      }
-      function render() {
-        geom();
-        for (var s = 0; s < 3; s++) cardAt(W * 0.16 - s * 1.5, H * 0.5 - s * 1.5, "", 120);
-        for (var i = 0; i < slots.length; i++) { var sp = slotPos(i); cardAt(sp[0], sp[1], slots[i].g, 220); }
-        for (var i = 0; i < flying.length; i++) {
-          var f = flying[i], sp = slotPos(f.slot);
-          var x = p.lerp(W * 0.16, sp[0], f.t), y = p.lerp(H * 0.5, sp[1], f.t) - Math.sin(Math.PI * f.t) * H * 0.22;
-          cardAt(x, y, f.g, 240);
-        }
-        if ((blink % 30) < 18) { p.noStroke(); p.fill(170, 255, 120, 220); p.rect(W * 0.08, H * 0.16, 5, 9); }
-      }
-      p.setup = function () {
-        var b = box(holder); W = b.w; H = b.h;
-        p.createCanvas(W, H); p.frameRate(30);
-        p.background(PURP[0], PURP[1], PURP[2]);
-        p.textFont("monospace"); p.textAlign(p.CENTER, p.CENTER); reset();
-        if (reduce) { for (var i = 0; i < CAP; i++) slots.push({ g: GLY[i % GLY.length] }); render(); p.noLoop(); }
-      };
-      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
-      p.draw = function () {
-        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, 80); blink += 1 + Math.round(st.k * 2); geom();
-        for (var k = flying.length - 1; k >= 0; k--) { var f = flying[k]; f.t += 0.05 + st.k * 0.06; if (f.t >= 1) { slots[f.slot] = { g: f.g }; flying.splice(k, 1); } }
-        if (full > 0) { if (--full === 0) reset(); }
-        else if (dealT-- <= 0 && flying.length === 0) {
-          if (slots.length >= CAP) full = Math.round(40 - st.k * 30);
-          else { flying.push({ slot: slots.length, t: 0, g: GLY[Math.floor(p.random(GLY.length))] }); dealT = Math.round(24 - st.k * 18); }
+        if (act < 0 && flipT-- <= 0) {                   // pick a new card, toggle its face → it flips
+          act = Math.floor(p.random(cards.length));
+          cards[act].face = cards[act].face ? 0 : 1;
+          flipT = Math.round(16 - st.k * 10);
         }
         render();
       };
     }
 
-    /* iconizer: a pixel grid forges a symmetric glyph, dissolves, re-forges */
+    /* iconizer: image → pixelated grid. a real GLYPH resolves out of a sampled
+       grid — a row-by-row sampling cursor (the live accent) sweeps the field;
+       cells it has passed snap to figure (bright) or ground (faint), so a
+       recognizable bitmap forges out of static, holds, then re-forges anew */
     function icon(p, holder, st) {
-      var W, H, G = 5, cells, forgeT = 0, blink = 0, pad;
-      function geom() { pad = Math.min(W, H) * 0.16; }
-      function forge() {
-        cells = [];
-        var half = Math.ceil(G / 2);
-        for (var r = 0; r < G; r++) for (var c = 0; c < half; c++) {
-          var on = p.random() < 0.5;
-          cells.push({ r: r, c: c, on: on, a: 0 });
-          if (c !== G - 1 - c) cells.push({ r: r, c: G - 1 - c, on: on, a: 0 }); // mirror for symmetry
-        }
+      var W, H, G = 8, cells, hold = 0, pad, scan = 0;   // 8×8 bitmap fills the square
+      // a small library of legible 8×8 glyphs (rows of 8 chars, # = figure).
+      // mirror-symmetric, high figure/ground contrast — these read as ICONS.
+      var GLYPHS = [
+        ["..####..",".#....#.","#.####.#","#.####.#","#.####.#","#......#",".#....#.","..####.."], // face/mask
+        ["...##...","..####..",".######.","########",".######.","..####..","...##...","...##..."], // diamond/gem
+        ["#......#",".#....#.","..#..#..","...##...","...##...","..#..#..",".#....#.","#......#"], // X / cross
+        ["..####..",".#....#.","#..##..#","#.####.#","#.####.#","#..##..#",".#....#.","..####.."], // ring
+        ["...##...","..#..#..",".#.##.#.","#.####.#","#.####.#",".#.##.#.","..#..#..","...##..."]  // star/burst
+      ];
+      var side, ox, oy, step_;
+      function geom() {
+        pad = Math.min(W, H) * 0.07;
+        side = Math.min(W, H) - 2 * pad;
+        ox = (W - side) / 2; oy = (H - side) / 2; step_ = side / G;
       }
-      function cx(c) { return pad + c * ((W - 2 * pad) / (G - 1)); }
-      function cy(r) { return pad + r * ((H - 2 * pad) / (G - 1)); }
+      function forge() {
+        var g = GLYPHS[Math.floor(p.random(GLYPHS.length))];
+        cells = [];
+        for (var r = 0; r < G; r++) for (var c = 0; c < G; c++)
+          cells.push({ r: r, c: c, on: g[r].charAt(c) === "#", a: 0 });
+      }
+      function cx(c) { return ox + (c + 0.5) * step_; }
+      function cy(r) { return oy + (r + 0.5) * step_; }
       function render() {
         geom();
-        var sz = ((W - 2 * pad) / (G - 1)) * (0.42 + st.k * 0.18);
+        var sz = step_ * (0.78 + st.k * 0.12);             // blocks tile the grid densely
+        var head = scan, hr = Math.floor(head);            // sampling head is on row hr
         for (var i = 0; i < cells.length; i++) {
           var cl = cells[i];
-          cl.a += ((cl.on ? 1 : 0.12) - cl.a) * 0.12;
-          var x = cx(cl.c), y = cy(cl.r);
-          p.noStroke();
-          p.fill(GREEN[0], GREEN[1], GREEN[2], 40 + cl.a * 190);
-          p.rect(x - sz / 2, y - sz / 2, sz, sz, 1);
+          var reached = cl.r < hr || (cl.r === hr && (head - hr) > (cl.c + 0.5) / G);
+          var tgt = reached ? (cl.on ? 1 : 0) : 0;         // resolve once the cursor passes
+          cl.a += (tgt - cl.a) * 0.22;
+          var x = cx(cl.c) - sz / 2, y = cy(cl.r) - sz / 2;
+          // ground = faint frame, figure = solid bright block → strong contrast
+          p.noFill(); gstroke(p, A_FAINT, 1); p.rect(x, y, sz, sz, 1);
+          if (cl.a > 0.02) { gfill(p, A_STRUCT + cl.a * (A_ACTIVE - A_STRUCT)); p.rect(x, y, sz * cl.a, sz * cl.a, 1); }
         }
-        if ((blink % 30) < 18) { p.noStroke(); p.fill(170, 255, 120, 220); p.rect(W * 0.08, H * 0.12, 5, 9); }
+        // sampling cursor: the single live accent — a bright bar scanning a row
+        if (hr < G) {
+          var cc = Math.floor((head - hr) * G);            // cursor block within the row
+          accent(p, 235);
+          p.rect(cx(cc) - sz / 2, cy(hr) - sz / 2, sz, sz, 1);
+          accent(p, 90); p.rect(ox, cy(hr) - step_ / 2, side, step_);   // faint sweep band
+        }
       }
       p.setup = function () {
         var b = box(holder); W = b.w; H = b.h;
         p.createCanvas(W, H); p.frameRate(30);
         p.background(PURP[0], PURP[1], PURP[2]); geom(); forge();
-        if (reduce) { for (var i = 0; i < cells.length; i++) cells[i].a = cells[i].on ? 1 : 0.12; render(); p.noLoop(); }
+        if (reduce) { scan = G; for (var i = 0; i < cells.length; i++) cells[i].a = cells[i].on ? 1 : 0; render(); p.noLoop(); }
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, 70); blink += 1 + Math.round(st.k * 2);
-        if (forgeT-- <= 0) { forge(); forgeT = Math.round(80 - st.k * 55); }
+        trail(p, W, H, TRAIL_A - st.k * 18);                // shared rhythm
+        if (scan < G) scan += 0.045 + st.k * 0.05;          // cursor sweeps down the rows
+        else if (hold-- <= 0) { forge(); scan = 0; hold = Math.round(40 - st.k * 26); } // hold the figure, then re-forge
         render();
       };
     }
@@ -795,8 +1347,9 @@ body.glitching::after {
         }
       }
     }
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-    else boot();
+    function start() { whenP5(boot); }   // need both DOM ready and p5 loaded
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+    else start();
   })();
   </script>
 </body>

@@ -2,7 +2,7 @@
       background-attachment: fixed;
       background-position:center;
       background-size: cover;
-      color: #73B036;
+      color: #33FF33;
       font-family: monospace;
       margin: 0;
       padding: 0;
@@ -23,9 +23,9 @@
       vertical-align: middle;
   }
   .inner {
-      border: 3px solid #73B036;
+      border: 3px solid #33FF33;
       padding: 6px;
-      background-color: rgba(22,1,33,1);
+      background-color: rgba(0, 17, 0, 1);
       margin-left: auto;
       margin-right: auto;
       width: 50%;
@@ -38,7 +38,7 @@
       padding-right: 16px;
   }
   a {
-    background-color: #73B036;
+    background-color: #33FF33;
     text-decoration:none;
     color: black;
     text-transform: uppercase;
@@ -50,12 +50,12 @@
     text-decoration: none;
   }
   td {
-    border:6px double #73B036;
+    border:6px double #33FF33;
     padding:10px;
   }
   table {
     border-collapse:collapse;
-    border-color:#73B036;
+    border-color:#33FF33;
     width: 100%;
     border-width: 3px;
   }
