@@ -1289,6 +1289,17 @@ body.glitching::after {
     var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon };
 
     function boot() {
+      // shuffle the sigil tiles in place each load (Fisher–Yates), reappending
+      // moves the live nodes — no rebuild, listeners and labels ride along.
+      var strip = document.querySelector(".sigils");
+      if (strip) {
+        var tiles = Array.prototype.slice.call(strip.children);
+        for (var s = tiles.length - 1; s > 0; s--) {
+          var j2 = Math.floor(Math.random() * (s + 1)), t = tiles[s];
+          tiles[s] = tiles[j2]; tiles[j2] = t;
+        }
+        for (var k = 0; k < tiles.length; k++) strip.appendChild(tiles[k]);
+      }
       var els = document.querySelectorAll(".sigil"), insts = [], pairs = [];
       for (var i = 0; i < els.length; i++) {
         (function (el) {
