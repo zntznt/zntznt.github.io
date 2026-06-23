@@ -740,6 +740,11 @@ body.glitching::after {
             <span class="sigil-label">iconizer</span>
             <span class="sigil-desc">glyph &amp; icon forge</span>
           </a>
+          <a class="sigil" data-sketch="fallacynator" href="https://zntznt.com/fallacynator/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">fallacynator</span>
+            <span class="sigil-desc">fallacy or just cynicism?</span>
+          </a>
         </div>
       </div>
     </div>
@@ -1286,7 +1291,111 @@ body.glitching::after {
       };
     }
 
-    var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon };
+    /* fallacynator: a belief contest, not a gotcha machine. candidate fallacy
+       nodes ring a central VALID anchor. evidence nudges each candidate's belief
+       up/down, but VALID holds a STRONG PRIOR — so the verdict edge usually
+       resolves to the center (VALID glows accent: "no clear fallacy, you might
+       just be skeptical, and that's okay"). only when a candidate crosses a high
+       threshold does THAT node briefly flash accent as a tentative accusation,
+       then decays. accusations are rare and never sticky — by design.
+       (see SIGILS.md — this is the worked example.) */
+    function fallacynator(p, holder, st) {
+      var W, H, cx0, cy0, R, nodes, t = 0, settleT = 0;
+      var N = 6;                       // candidate fallacy nodes around the ring
+      var PRIOR = 0.6;                 // VALID's strong prior (matches the engine)
+      var THRESH = 0.78;               // a candidate must beat this to be accused
+      var valid, accused = -1, accuseGlow = 0;
+      function build() {
+        nodes = [];
+        for (var i = 0; i < N; i++) nodes.push({ w: p.random(0.05, 0.2), drift: p.random(-1, 1) });
+        valid = PRIOR; accused = -1; accuseGlow = 0;
+      }
+      function geom() {
+        cx0 = W / 2; cy0 = H / 2;
+        R = Math.min(W, H) * 0.36;
+      }
+      function px(i) { return cx0 + Math.cos(-Math.PI / 2 + i / N * Math.PI * 2) * R; }
+      function py(i) { return cy0 + Math.sin(-Math.PI / 2 + i / N * Math.PI * 2) * R; }
+      function render() {
+        geom();
+        // edges from each candidate to the center — weight = current belief tier
+        for (var i = 0; i < N; i++) {
+          var nd = nodes[i], a = A_FAINT + nd.w * (A_ACTIVE - A_FAINT);
+          gstroke(p, a, 0.6 + nd.w * 1.6); p.line(px(i), py(i), cx0, cy0);
+          // candidate node: sits in whatever tier its belief earns it
+          gfill(p, A_STRUCT + nd.w * (A_ACTIVE - A_STRUCT));
+          var r = 4 + nd.w * 5;
+          if (i === accused) { accent(p, 120 + accuseGlow * 135); r += accuseGlow * 3; } // tentative accusation
+          p.circle(px(i), py(i), r * 2);
+        }
+        // the VALID anchor at the center — the prior we defend
+        var vGlow = accused < 0 ? 1 : (1 - accuseGlow);     // dims while a candidate is accused
+        gfill(p, A_STRUCT); p.circle(cx0, cy0, R * 0.5);
+        accent(p, 140 + vGlow * 95); p.circle(cx0, cy0, R * 0.28 + vGlow * 3);
+        gfill(p, A_FAINT); p.textSize(R * 0.22); p.text("λ", cx0, cy0);
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]);
+        p.textFont("monospace"); p.textAlign(p.CENTER, p.CENTER); geom(); build();
+        settleT = Math.round(120 + p.random(80));
+        if (reduce) { render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, TRAIL_A - st.k * 18);                 // shared rhythm
+        t += 1 + st.k * 2;
+        // evidence: each candidate's belief drifts (a sine wander), bounded low.
+        // hover = "more questions answered" → evidence moves a little faster.
+        var top = -1, topW = 0;
+        for (var i = 0; i < N; i++) {
+          var nd = nodes[i];
+          nd.w += (Math.sin(t * 0.01 * (1 + st.k) + nd.drift * 6) * 0.5 + 0.5 - nd.w) * 0.02;
+          nd.w = Math.max(0.04, Math.min(1, nd.w));
+          if (nd.w > topW) { topW = nd.w; top = i; }
+        }
+        // verdict: accuse the leader ONLY if it clears the threshold AND beats the
+        // VALID prior. otherwise the center holds — validity is the default.
+        if (topW > THRESH && topW > valid) { accused = top; accuseGlow += (1 - accuseGlow) * 0.06; }
+        else { accuseGlow += (0 - accuseGlow) * 0.05; if (accuseGlow < 0.02) accused = -1; }
+        if (settleT-- <= 0) { build(); settleT = Math.round((140 + p.random(90)) * (1 - st.k * 0.4)); } // fresh argument
+        render();
+      };
+    }
+
+    /* ─── adding a sigil card ──────────────────────────────────────────────
+       A card is an instance-mode p5 closure: fn(p, holder, st).
+         • holder = the .sigil-canvas span p5 renders into.
+         • st     = hover bridge: st.hover (bool), st.k (0→1 eased intensity).
+                    ease it yourself in draw: st.k += ((st.hover?1:0) - st.k)*0.08
+       Three rules keep it in the family:
+         1. size via box(holder) + createCanvas in setup (square, edge-to-edge).
+         2. call trail(p,W,H, TRAIL_A - st.k*18) FIRST in draw → shared breathing.
+         3. paint only in GREEN/ACCENT via gstroke/gfill/accent, and honor reduce:
+            render one static frame then p.noLoop().
+       Then register below (add `name: name`) and drop one <a class="sigil"
+       data-sketch="name"> tile in the .sigils strip. Boot + shuffle pick it up.
+
+       function spark(p, holder, st) {
+         var W, H, pts = [];
+         function geom() { pts = []; for (var i=0;i<24;i++) pts.push({x:p.random(W),y:p.random(H)}); }
+         function render() { for (var i=0;i<pts.length;i++){ gfill(p, A_ACTIVE); p.circle(pts[i].x, pts[i].y, 3); } }
+         p.setup = function () {
+           var b = box(holder); W=b.w; H=b.h; p.createCanvas(W,H); p.frameRate(30);
+           p.background(PURP[0],PURP[1],PURP[2]); geom();
+           if (reduce) { render(); p.noLoop(); }
+         };
+         p.windowResized = function () { var b=box(holder); W=b.w; H=b.h; p.resizeCanvas(W,H); };
+         p.draw = function () {
+           st.k += ((st.hover?1:0) - st.k) * 0.08;
+           trail(p, W, H, TRAIL_A - st.k*18);
+           render();
+         };
+       }
+       ──────────────────────────────────────────────────────────────────── */
+    var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon, fallacynator: fallacynator };
 
     function boot() {
       // shuffle the sigil tiles in place each load (Fisher–Yates), reappending
