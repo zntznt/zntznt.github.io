@@ -77,18 +77,30 @@ logical fallacies." Its non-negotiable thesis: **start from goodwill, disarm
 cynics, hold a strong prior that the argument is VALID** — accuse a fallacy only
 when one candidate clearly beats the VALID null hypothesis.
 
-The sketch renders that as a belief contest:
+The sketch plays the actual Akinator loop — it doesn't just *look* like the app,
+it runs a miniature of the engine:
 
-- A ring of candidate **fallacy** nodes surrounds a central **VALID** anchor.
-- Each frame, "evidence" nudges the candidates' belief weights up and down. A
-  node's weight decides which opacity tier it sits in — most stay at `A_FAINT` /
-  `A_STRUCT` (suspicion that never amounts to much).
-- VALID carries a **strong prior**, so the verdict edge usually resolves *to the
-  center* and VALID glows in `accent` — "no clear fallacy; you might just be
-  skeptical, and that's okay."
-- Only when a candidate's weight crosses a high threshold does *that* node briefly
-  flash `accent` as a tentative accusation — then belief decays and the center
-  reclaims it. Accusations are rare and never sticky, by design.
+- Each cycle loads a **fresh random argument**: 4 candidate fallacies drawn from a
+  pool, plus a **VALID** null hypothesis that starts with a strong prior
+  (`PRIOR_VALID = 0.6`). The belief vector is rendered as horizontal **bars** —
+  bar width *is* the posterior probability.
+- A sequence of yes/no **questions** then arrives on a timer. Each answer is a
+  real **Bayesian update**: every candidate's belief is multiplied by a
+  likelihood and the whole vector renormalizes to a distribution. The bars
+  rebalance and the field visibly **narrows**. (~60% of questions are
+  "charitable" — they prop up VALID rather than implicate a candidate.)
+- After the questions run out it **decides**, then holds the verdict before
+  reloading. It accuses a candidate *only* if that candidate beats VALID **and**
+  clears a confidence threshold (`THRESH`); otherwise VALID wins and glows in
+  `accent` — "no clear fallacy; you might just be skeptical, and that's okay."
 
-That's "strong prior on validity, accuse rarely" rendered as motion. If you ever
-rework the engine, the card should keep favoring the center.
+Because of the strong prior plus charitable likelihoods, VALID wins most rounds.
+A tentative accusation (accent on a fallacy row) is the rare exception, never the
+default. That's the thesis as a running process, not decoration. If you rework
+the engine, keep the prior strong and the likelihoods charity-first — the card
+should keep landing on VALID most of the time.
+
+This card is the richest worked example of the contract: per-cycle randomized
+structure (like `sim`'s graph or `outline`'s tree), a real multi-step process
+(like `sim`'s flowing packets), and a single live accent (the question cursor,
+then the verdict).

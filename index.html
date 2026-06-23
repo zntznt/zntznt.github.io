@@ -1300,67 +1300,112 @@ body.glitching::after {
        then decays. accusations are rare and never sticky — by design.
        (see SIGILS.md — this is the worked example.) */
     function fallacynator(p, holder, st) {
-      var W, H, cx0, cy0, R, nodes, t = 0, settleT = 0;
-      var N = 6;                       // candidate fallacy nodes around the ring
-      var PRIOR = 0.6;                 // VALID's strong prior (matches the engine)
-      var THRESH = 0.78;               // a candidate must beat this to be accused
-      var valid, accused = -1, accuseGlow = 0;
+      var W, H, pad = 9, blink = 0;
+      // the actual Akinator loop, played out: a fresh random argument loads a
+      // shortlist of candidate fallacies + a VALID null (strong prior). then a
+      // sequence of yes/no questions arrives; each ANSWER is a real Bayesian
+      // update — every candidate's belief is multiplied by a likelihood and the
+      // whole vector renormalizes, so the bars rebalance and the field NARROWS.
+      // VALID's prior is high, so it usually wins → "no clear fallacy, you might
+      // just be skeptical." only when one candidate decisively beats VALID *and*
+      // clears a confidence threshold does it flash a tentative accusation.
+      var FALLACIES = ["ad hominem", "strawman", "slippery slope", "false dilemma",
+        "appeal to authority", "circular", "hasty generalization", "red herring",
+        "bandwagon", "post hoc", "no true scotsman", "appeal to emotion"];
+      var PRIOR_VALID = 0.6;   // "valid until proven otherwise" — the thesis, literally
+      var THRESH = 0.45;       // posterior a candidate must reach to be accused.
+      // tuned (see SIGILS.md) so VALID wins ~88% of arguments and an accusation
+      // is the rare, legible exception — charity-first, not never-convict.
+      var cands, bel, asked, qLeft, askT, phase, verdict, glow;
+      // phase: 0 = asking (questions narrowing), 1 = verdict held, then reload.
+
       function build() {
-        nodes = [];
-        for (var i = 0; i < N; i++) nodes.push({ w: p.random(0.05, 0.2), drift: p.random(-1, 1) });
-        valid = PRIOR; accused = -1; accuseGlow = 0;
+        // pick 4 random distinct candidate fallacies for this argument; index N = VALID.
+        var pool = FALLACIES.slice(), c = [];
+        for (var i = 0; i < 4; i++) c.push(pool.splice(Math.floor(p.random(pool.length)), 1)[0]);
+        cands = c;
+        var n = c.length;                       // VALID lives at index n
+        bel = [];
+        // priors: candidates split the remaining mass; VALID keeps the strong prior.
+        for (var j = 0; j < n; j++) bel.push((1 - PRIOR_VALID) / n);
+        bel.push(PRIOR_VALID);
+        asked = []; for (var k = 0; k <= n; k++) asked.push(0);  // per-row "just updated" flash
+        qLeft = 4 + Math.floor(p.random(3));    // 4–6 questions this round
+        askT = 12; phase = 0; verdict = -1; glow = 0;
       }
-      function geom() {
-        cx0 = W / 2; cy0 = H / 2;
-        R = Math.min(W, H) * 0.36;
-      }
-      function px(i) { return cx0 + Math.cos(-Math.PI / 2 + i / N * Math.PI * 2) * R; }
-      function py(i) { return cy0 + Math.sin(-Math.PI / 2 + i / N * Math.PI * 2) * R; }
-      function render() {
-        geom();
-        // edges from each candidate to the center — weight = current belief tier
-        for (var i = 0; i < N; i++) {
-          var nd = nodes[i], a = A_FAINT + nd.w * (A_ACTIVE - A_FAINT);
-          gstroke(p, a, 0.6 + nd.w * 1.6); p.line(px(i), py(i), cx0, cy0);
-          // candidate node: sits in whatever tier its belief earns it
-          gfill(p, A_STRUCT + nd.w * (A_ACTIVE - A_STRUCT));
-          var r = 4 + nd.w * 5;
-          if (i === accused) { accent(p, 120 + accuseGlow * 135); r += accuseGlow * 3; } // tentative accusation
-          p.circle(px(i), py(i), r * 2);
+
+      function ask() {
+        // a question = a likelihood vector over candidates+VALID, then normalize.
+        // most evidence is charitable: it tends to PROP UP valid and only sometimes
+        // implicates a candidate — charity-first, so narrowing rarely convicts.
+        var n = bel.length, charitable = p.random() < 0.5;
+        var tot = 0;
+        for (var i = 0; i < n; i++) {
+          var isValid = (i === n - 1);
+          var like;
+          if (charitable) like = isValid ? p.random(1.05, 1.4) : p.random(0.55, 1.05);
+          else            like = isValid ? p.random(0.55, 0.95) : p.random(0.7, 3.0);
+          bel[i] *= like; asked[i] = Math.min(1, like - 0.4);  // flash rows the answer moved
+          tot += bel[i];
         }
-        // the VALID anchor at the center — the prior we defend
-        var vGlow = accused < 0 ? 1 : (1 - accuseGlow);     // dims while a candidate is accused
-        gfill(p, A_STRUCT); p.circle(cx0, cy0, R * 0.5);
-        accent(p, 140 + vGlow * 95); p.circle(cx0, cy0, R * 0.28 + vGlow * 3);
-        gfill(p, A_FAINT); p.textSize(R * 0.22); p.text("λ", cx0, cy0);
+        for (var j = 0; j < n; j++) bel[j] /= tot;             // renormalize → a distribution
+        qLeft--;
+        if (qLeft <= 0) {                                       // out of questions → decide
+          var top = 0; for (var m = 1; m < n - 1; m++) if (bel[m] > bel[top]) top = m;
+          // accuse only if the leading candidate beats VALID *and* clears threshold
+          verdict = (bel[top] > bel[n - 1] && bel[top] >= THRESH) ? top : (n - 1);
+          phase = 1; blink = 0;
+        }
       }
+
+      function barGeom() {
+        var n = bel.length, gap = (H - 2 * pad) / n;
+        return { n: n, gap: gap, x0: pad + 2, bw: W - 2 * pad - 4 };
+      }
+      function render() {
+        var g = barGeom();
+        for (var i = 0; i < g.n; i++) {
+          var isValid = (i === g.n - 1);
+          var y = pad + (i + 0.5) * g.gap, h = Math.max(3, g.gap * 0.5);
+          var won = (phase === 1 && i === verdict);
+          var accuse = won && !isValid;
+          // row frame — structure, full opacity every frame
+          gstroke(p, A_STRUCT, 1); p.noFill();
+          p.rect(g.x0, y - h / 2, g.bw, h, 1);
+          // belief fill — width IS the posterior probability. valid sits a tier up.
+          var base = isValid ? A_STRUCT : A_FAINT;
+          var fa = base + bel[i] * (A_ACTIVE - base) + asked[i] * 40;
+          gfill(p, Math.min(255, fa));
+          p.rect(g.x0 + 1, y - h / 2 + 1, (g.bw - 2) * bel[i], h - 2);
+          // the live accent: the row the latest answer just moved most, or the verdict
+          if (won) { accent(p, 150 + glow * 105); p.rect(g.x0 + 1, y - h / 2 + 1, (g.bw - 2) * bel[i], h - 2); }
+          // label
+          p.textAlign(p.LEFT, p.CENTER); p.textSize(Math.min(9, g.gap * 0.32));
+          if (accuse) accent(p, 150 + glow * 105); else gfill(p, isValid ? A_ACTIVE : A_STRUCT);
+          p.text(isValid ? "λ valid" : cands[i], g.x0 + 3, y - h / 2 - g.gap * 0.18);
+        }
+        // question cursor — the live accent while narrowing: a ticking probe at the edge
+        if (phase === 0 && (blink % 24) < 14) { accent(p, 230); p.rect(W - pad - 3, pad, 3, H - 2 * pad); }
+      }
+
       p.setup = function () {
         var b = box(holder); W = b.w; H = b.h;
         p.createCanvas(W, H); p.frameRate(30);
         p.background(PURP[0], PURP[1], PURP[2]);
-        p.textFont("monospace"); p.textAlign(p.CENTER, p.CENTER); geom(); build();
-        settleT = Math.round(120 + p.random(80));
-        if (reduce) { render(); p.noLoop(); }
+        p.textFont("monospace"); build();
+        if (reduce) { for (var q = 0; q < 5; q++) ask(); render(); p.noLoop(); }
       };
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, TRAIL_A - st.k * 18);                 // shared rhythm
-        t += 1 + st.k * 2;
-        // evidence: each candidate's belief drifts (a sine wander), bounded low.
-        // hover = "more questions answered" → evidence moves a little faster.
-        var top = -1, topW = 0;
-        for (var i = 0; i < N; i++) {
-          var nd = nodes[i];
-          nd.w += (Math.sin(t * 0.01 * (1 + st.k) + nd.drift * 6) * 0.5 + 0.5 - nd.w) * 0.02;
-          nd.w = Math.max(0.04, Math.min(1, nd.w));
-          if (nd.w > topW) { topW = nd.w; top = i; }
+        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);  // shared rhythm
+        for (var i = 0; i < asked.length; i++) asked[i] *= 0.88;   // answer-flash decays
+        if (phase === 0) {
+          if (askT-- <= 0) { ask(); askT = Math.round(14 - st.k * 8); }  // next question (hover = faster)
+        } else {
+          glow += (1 - glow) * 0.06;
+          if (blink > (60 - st.k * 30)) build();                 // hold the verdict, then a fresh argument
         }
-        // verdict: accuse the leader ONLY if it clears the threshold AND beats the
-        // VALID prior. otherwise the center holds — validity is the default.
-        if (topW > THRESH && topW > valid) { accused = top; accuseGlow += (1 - accuseGlow) * 0.06; }
-        else { accuseGlow += (0 - accuseGlow) * 0.05; if (accuseGlow < 0.02) accused = -1; }
-        if (settleT-- <= 0) { build(); settleT = Math.round((140 + p.random(90)) * (1 - st.k * 0.4)); } // fresh argument
         render();
       };
     }
