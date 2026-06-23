@@ -87,7 +87,7 @@ it runs a miniature of the engine:
 - A sequence of yes/no **questions** then arrives on a timer. Each answer is a
   real **Bayesian update**: every candidate's belief is multiplied by a
   likelihood and the whole vector renormalizes to a distribution. The bars
-  rebalance and the field visibly **narrows**. (~60% of questions are
+  rebalance and the field visibly **narrows**. (~half the questions are
   "charitable" — they prop up VALID rather than implicate a candidate.)
 - After the questions run out it **decides**, then holds the verdict before
   reloading. It accuses a candidate *only* if that candidate beats VALID **and**
