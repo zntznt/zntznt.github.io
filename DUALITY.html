@@ -112,26 +112,177 @@ body {
     opacity: 0.5;
   }
 }
+
+/* ===== CRT barrel curvature (WebGL) ===================================
+   the DOM text is drawn onto an offscreen 2D canvas, uploaded as a texture,
+   and a barrel-distortion fragment shader samples it with uv pushed outward
+   by r² → straight lines actually BOW like tube glass. runs on the GPU.
+   the source DOM is kept (drives the string + reroll) but hidden offscreen. */
+#crt { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+/* keep the text nodes in the DOM (reroll/title) but out of sight — the GL canvas is what shows */
+.crt-src { position: fixed; left: -99999px; top: 0; }
 </style>
 </head>
 <body onclick="hideHint(); history.go(0);">
-<div id="hint">CLICK TO REROLL</div>
-<div class="flex" id="flex"></div>
-<a class="nav-link" href="index.html" onclick="event.stopPropagation();">RETURN</a>
+<canvas id="crt"></canvas>
+<!-- source nodes kept for the string + title + reroll; hidden offscreen -->
+<div class="crt-src">
+  <div id="hint">CLICK TO REROLL</div>
+  <div class="flex" id="flex"></div>
+</div>
+<a class="nav-link" href="index.html" onclick="event.stopPropagation();" style="z-index:5;">RETURN</a>
+
 <script src="files/like.js"></script>
 <script>
+var liked = "";
 function randomize() {
   var alternative = alternatives[Math.floor(Math.random() * alternatives.length)];
-  document.getElementById("flex").innerHTML = "I LIKE " + alternative;
-  document.title = "I LIKE " + alternative;
+  liked = "I LIKE " + alternative;
+  document.getElementById("flex").innerHTML = liked;   // kept for a11y/source-of-truth
+  document.title = liked;
+  if (window.crtPaint) crtPaint();                       // redraw the texture
 }
 function hideHint() {
-  var hint = document.getElementById("hint");
-  if (hint && !hint.className) {
-    hint.className = "hidden";
-  }
+  window.hintShown = false;
+  if (window.crtPaint) crtPaint();
 }
 randomize();
+</script>
+
+<!-- ===== the CRT: 2D text canvas → barrel-warp WebGL shader =====
+     no libs. the text is painted on a 2D canvas (the texture); the shader
+     remaps every pixel's uv outward by r² so the picture bows like glass,
+     then adds scanlines + vignette so the curve reads as a real tube. -->
+<script>
+(function () {
+  var gl, prog, tex, texCanvas, tctx, uK, uTime, uRes, raf;
+  if (window.hintShown === undefined) window.hintShown = true;
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var canvas = document.getElementById("crt");
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // --- the 2D canvas that holds the rendered text (becomes the GL texture) ---
+  texCanvas = document.createElement("canvas");
+  tctx = texCanvas.getContext("2d");
+
+  function size() {
+    var w = innerWidth, h = innerHeight;
+    canvas.width = Math.floor(w * DPR); canvas.height = Math.floor(h * DPR);
+    canvas.style.width = w + "px"; canvas.style.height = h + "px";
+    texCanvas.width = canvas.width; texCanvas.height = canvas.height;
+    if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
+    paintTexture();
+  }
+
+  // draw the amber text (+ hint) onto the 2D texture canvas
+  function paintTexture() {
+    var W = texCanvas.width, H = texCanvas.height;
+    tctx.fillStyle = "#020516"; tctx.fillRect(0, 0, W, H);
+    tctx.textAlign = "center"; tctx.textBaseline = "middle";
+    tctx.fillStyle = "#E4A71E";
+    // glow (phosphor bloom) then the crisp glyphs on top
+    var fs = Math.min(W * 0.065, H * 0.12);
+    tctx.font = "700 " + fs + "px 'Press Start 2P', monospace";
+    // wrap to fit width — keep clear of the curved edges so nothing bows off-screen
+    var words = liked.split(" "), lines = [], cur = "";
+    for (var i = 0; i < words.length; i++) {
+      var test = cur ? cur + " " + words[i] : words[i];
+      if (tctx.measureText(test).width > W * 0.72 && cur) { lines.push(cur); cur = words[i]; }
+      else cur = test;
+    }
+    // a very long single word: shrink the font until it fits the safe width
+    for (var s = 0; s < lines.length; s++) {
+      while (tctx.measureText(lines[s]).width > W * 0.78 && fs > 8) {
+        fs *= 0.92; tctx.font = "700 " + fs + "px 'Press Start 2P', monospace";
+      }
+    }
+    if (cur) lines.push(cur);
+    var lh = fs * 1.5, y0 = H / 2 - (lines.length - 1) * lh / 2;
+    tctx.shadowColor = "rgba(228,167,30,0.8)"; tctx.shadowBlur = fs * 0.5;
+    for (var l = 0; l < lines.length; l++) tctx.fillText(lines[l], W / 2, y0 + l * lh);
+    tctx.shadowBlur = 0;
+    if (window.hintShown) {
+      tctx.fillStyle = "rgba(228,167,30,0.5)";
+      tctx.font = "700 " + (fs * 0.18) + "px 'Press Start 2P', monospace";
+      tctx.fillText("CLICK TO REROLL", W / 2, H * 0.08);
+    }
+    if (gl) uploadTexture();
+  }
+  window.crtPaint = paintTexture;
+
+  // --- WebGL: fullscreen quad, barrel-warp fragment shader ---
+  var VS = "attribute vec2 p; varying vec2 v; void main(){ v=(p+1.0)*0.5; v.y=1.0-v.y; gl_Position=vec4(p,0.0,1.0);}";
+  var FS = [
+    "precision highp float;",
+    "varying vec2 v; uniform sampler2D t; uniform float k; uniform vec2 res; uniform float time;",
+    "void main(){",
+    "  vec2 c = v - 0.5;",                              // centered uv (-0.5..0.5)
+    "  float r2 = dot(c, c);",                          // squared distance from center
+    "  vec2 uv = 0.5 + c * (1.0 + k * r2);",            // BARREL: push outward by r² → bow
+    // outside the curved glass = black bezel
+    "  if (uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0){ gl_FragColor=vec4(0.0,0.0,0.0,1.0); return; }",
+    // chromatic aberration at the edges (RGB split grows with r²) — subtle tube fringe
+    "  float ca = k * r2 * 0.08;",
+    "  vec3 col;",
+    "  col.r = texture2D(t, 0.5 + (uv-0.5)*(1.0+ca)).r;",
+    "  col.g = texture2D(t, uv).g;",
+    "  col.b = texture2D(t, 0.5 + (uv-0.5)*(1.0-ca)).b;",
+    // scanlines
+    "  float sl = 0.85 + 0.15*sin(uv.y*res.y*3.14159);",
+    "  col *= sl;",
+    // vignette — corners of the curved glass fall to dark
+    "  float vig = smoothstep(0.85, 0.35, r2*2.2);",
+    "  col *= vig;",
+    "  gl_FragColor = vec4(col, 1.0);",
+    "}"
+  ].join("\n");
+
+  function shader(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  function initGL() {
+    gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) return false;
+    prog = gl.createProgram();
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog); gl.useProgram(prog);
+    var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    uK = gl.getUniformLocation(prog, "k");
+    uRes = gl.getUniformLocation(prog, "res");
+    uTime = gl.getUniformLocation(prog, "time");
+    return true;
+  }
+  function uploadTexture() {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texCanvas);
+    draw();
+  }
+  function draw() {
+    if (!gl) return;
+    gl.uniform1f(uK, 0.28);                              // curvature strength (the bow)
+    gl.uniform2f(uRes, canvas.height / DPR, canvas.height / DPR);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  // fonts load async — repaint once Press Start 2P is ready so the texture isn't a fallback
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(paintTexture);
+
+  if (initGL()) {
+    addEventListener("resize", size);
+    size();              // sizes, paints texture, uploads, draws
+  } else {
+    // no WebGL: fall back to the plain DOM text (un-warped but functional)
+    document.querySelector(".crt-src").style.cssText = "position:fixed;inset:0;";
+    canvas.style.display = "none";
+  }
+})();
 </script>
 </body>
 </html>
