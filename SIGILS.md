@@ -69,9 +69,8 @@ shuffle + `ResizeObserver` sizing already cover it. No other wiring.
 
 ## Worked example A — the `steelman` card (belief math)
 
-[Steelman](https://github.com/zntznt/fallacynator) (repo still named
-`fallacynator` until renamed) reads an argument **at its strongest before judging
-it** — the opposite of a strawman. Its thesis: **start from goodwill, hold a
+[Steelman](https://github.com/zntznt/steelman) reads an argument **at its
+strongest before judging it** — the opposite of a strawman. Its thesis: **start from goodwill, hold a
 strong prior that the argument is SOUND, and notice a gap only when one fallacy
 clearly beats that prior.** The tone is gap-noticing, not accusation ("one thing
 to check," never "gotcha").
