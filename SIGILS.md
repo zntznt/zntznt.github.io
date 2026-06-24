@@ -67,40 +67,66 @@ After writing the sketch function:
 `boot()` finds every `.sigil`, reads `data-sketch`, instantiates p5, and the
 shuffle + `ResizeObserver` sizing already cover it. No other wiring.
 
-## Worked example — the `fallacynator` card
+## Worked example A — the `steelman` card (belief math)
 
-Added alongside the original five. It exists to show the contract end to end, and
-its *behavior encodes the app's thesis* (see below).
+[Steelman](https://github.com/zntznt/fallacynator) (repo still named
+`fallacynator` until renamed) reads an argument **at its strongest before judging
+it** — the opposite of a strawman. Its thesis: **start from goodwill, hold a
+strong prior that the argument is SOUND, and notice a gap only when one fallacy
+clearly beats that prior.** The tone is gap-noticing, not accusation ("one thing
+to check," never "gotcha").
 
-[Fallacynator](https://github.com/zntznt/fallacynator) is an "Akinator for
-logical fallacies." Its non-negotiable thesis: **start from goodwill, disarm
-cynics, hold a strong prior that the argument is VALID** — accuse a fallacy only
-when one candidate clearly beats the VALID null hypothesis.
-
-The sketch plays the actual Akinator loop — it doesn't just *look* like the app,
-it runs a miniature of the engine:
+The sketch plays a miniature of the narrowing engine — it doesn't just *look*
+like the app, it runs the math:
 
 - Each cycle loads a **fresh random argument**: 4 candidate fallacies drawn from a
-  pool, plus a **VALID** null hypothesis that starts with a strong prior
+  pool, plus a **SOUND** null hypothesis that starts with a strong prior
   (`PRIOR_VALID = 0.6`). The belief vector is rendered as horizontal **bars** —
   bar width *is* the posterior probability.
-- A sequence of yes/no **questions** then arrives on a timer. Each answer is a
-  real **Bayesian update**: every candidate's belief is multiplied by a
-  likelihood and the whole vector renormalizes to a distribution. The bars
-  rebalance and the field visibly **narrows**. (~half the questions are
-  "charitable" — they prop up VALID rather than implicate a candidate.)
+- A sequence of **questions** then arrives on a timer. Each answer is a real
+  **Bayesian update**: every candidate's belief is multiplied by a likelihood and
+  the whole vector renormalizes to a distribution. The bars rebalance and the
+  field visibly **narrows**. (~half the questions are "charitable" — they prop up
+  SOUND rather than implicate a candidate.)
 - After the questions run out it **decides**, then holds the verdict before
-  reloading. It accuses a candidate *only* if that candidate beats VALID **and**
-  clears a confidence threshold (`THRESH`); otherwise VALID wins and glows in
-  `accent` — "no clear fallacy; you might just be skeptical, and that's okay."
+  reloading. It surfaces a gap on a candidate *only* if that candidate beats SOUND
+  **and** clears a threshold (`THRESH`); otherwise the `λ sound` bar wins and
+  glows in `accent` — "looks solid; nothing to flag."
 
-Because of the strong prior plus charitable likelihoods, VALID wins most rounds.
-A tentative accusation (accent on a fallacy row) is the rare exception, never the
-default. That's the thesis as a running process, not decoration. If you rework
-the engine, keep the prior strong and the likelihoods charity-first — the card
-should keep landing on VALID most of the time.
+Because of the strong prior plus charitable likelihoods, SOUND wins ~88% of
+rounds. A flagged gap (accent on a fallacy row) is the rare exception, never the
+default. If you rework the engine, keep the prior strong and the likelihoods
+charity-first — the card should keep landing on SOUND most of the time.
 
-This card is the richest worked example of the contract: per-cycle randomized
-structure (like `sim`'s graph or `outline`'s tree), a real multi-step process
-(like `sim`'s flowing packets), and a single live accent (the question cursor,
-then the verdict).
+> Note: the animation still depicts the older sequential-interview engine. The
+> live app moved to a positive-first virtue **checklist**, but the bars-narrowing
+> picture still reads true for the *thesis* (strong prior on soundness, rare
+> flags), so it was retoned rather than rebuilt.
+
+## Worked example B — the `timecards` card (a state machine)
+
+A different shape from `steelman`: where that one animates a belief *distribution*,
+this one animates a **process**. [Timecards](https://github.com/zntznt/timecards)
+is study timers "in card form" — slot a card into a device, hit the big button to
+start/pause/resume, each card keeps its own time; swap a card and its data swaps
+in.
+
+The sketch plays the device's big-button loop as a four-phase state machine:
+
+1. **slot-in** — a fresh random card (label, timer mode, start value,
+   deadline/streak chip) slides down into the reader slot.
+2. **press** — the big button presses; an `accent` ring ripples out.
+3. **run** — the timer readout counts **up** (`▸` stopwatch) or **down** (`▾`
+   countdown). The running digits are the live `accent`.
+4. **chime** — a countdown that hits zero pulses concentric `accent` rings with a
+   `♪`/`!` (unless the card's alarm is `silent`). Then the card swaps and a new
+   one slots in.
+
+The per-cycle randomization is the **card itself** (the Timecards analog of
+`sim`'s fresh graph): each swap rolls a new label, up-vs-down mode, starting time,
+and a deadline (`"42d left"`) or streak (`"day 17"`) chip. The single live accent
+moves with the active phase — press ripple → running digits → chime burst.
+
+Between them, these two examples cover both kinds of richness in the family:
+**belief/structure** (`steelman`, like `sim`/`outline`) and **a timed process**
+(`timecards`, like `sim`'s packets or `deck`'s flips).

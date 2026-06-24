@@ -740,10 +740,15 @@ body.glitching::after {
             <span class="sigil-label">iconizer</span>
             <span class="sigil-desc">glyph &amp; icon forge</span>
           </a>
-          <a class="sigil" data-sketch="fallacynator" href="https://zntznt.com/fallacynator/">
+          <a class="sigil" data-sketch="steelman" href="https://zntznt.com/fallacynator/">
             <span class="sigil-canvas" aria-hidden="true"></span>
-            <span class="sigil-label">fallacynator</span>
-            <span class="sigil-desc">fallacy or just cynicism?</span>
+            <span class="sigil-label">steelman</span>
+            <span class="sigil-desc">read it at its strongest</span>
+          </a>
+          <a class="sigil" data-sketch="timecards" href="https://zntznt.com/timecards/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">timecards</span>
+            <span class="sigil-desc">study timers, in card form</span>
           </a>
         </div>
       </div>
@@ -1291,31 +1296,30 @@ body.glitching::after {
       };
     }
 
-    /* fallacynator: a belief contest, not a gotcha machine. candidate fallacy
-       nodes ring a central VALID anchor. evidence nudges each candidate's belief
-       up/down, but VALID holds a STRONG PRIOR — so the verdict edge usually
-       resolves to the center (VALID glows accent: "no clear fallacy, you might
-       just be skeptical, and that's okay"). only when a candidate crosses a high
-       threshold does THAT node briefly flash accent as a tentative accusation,
-       then decays. accusations are rare and never sticky — by design.
+    /* steelman: read an argument at its strongest before judging it (the opposite
+       of a strawman). belief bars over a shortlist of fallacies + a SOUND null
+       holding a strong prior. each "question" is a real Bayesian update, so the
+       bars rebalance and the field narrows — but the bar that usually wins is
+       SOUND ("looks solid; nothing to flag"). only when one fallacy decisively
+       beats SOUND and clears a threshold does it surface, and even then it's a
+       gap noticed, not a verdict pronounced — "one thing to check."
        (see SIGILS.md — this is the worked example.) */
-    function fallacynator(p, holder, st) {
+    function steelman(p, holder, st) {
       var W, H, pad = 9, blink = 0;
-      // the actual Akinator loop, played out: a fresh random argument loads a
-      // shortlist of candidate fallacies + a VALID null (strong prior). then a
-      // sequence of yes/no questions arrives; each ANSWER is a real Bayesian
-      // update — every candidate's belief is multiplied by a likelihood and the
-      // whole vector renormalizes, so the bars rebalance and the field NARROWS.
-      // VALID's prior is high, so it usually wins → "no clear fallacy, you might
-      // just be skeptical." only when one candidate decisively beats VALID *and*
-      // clears a confidence threshold does it flash a tentative accusation.
+      // the narrowing, played out: a fresh random argument loads a shortlist of
+      // candidate fallacies + a SOUND null (strong prior). then a sequence of
+      // questions arrives; each answer is a real Bayesian update — every
+      // candidate's belief is multiplied by a likelihood and the whole vector
+      // renormalizes, so the bars rebalance and the field NARROWS. SOUND's prior
+      // is high, so it usually wins → "looks solid." only when one candidate
+      // decisively beats SOUND *and* clears a threshold does a gap surface.
       var FALLACIES = ["ad hominem", "strawman", "slippery slope", "false dilemma",
         "appeal to authority", "circular", "hasty generalization", "red herring",
         "bandwagon", "post hoc", "no true scotsman", "appeal to emotion"];
-      var PRIOR_VALID = 0.6;   // "valid until proven otherwise" — the thesis, literally
-      var THRESH = 0.45;       // posterior a candidate must reach to be accused.
-      // tuned (see SIGILS.md) so VALID wins ~88% of arguments and an accusation
-      // is the rare, legible exception — charity-first, not never-convict.
+      var PRIOR_VALID = 0.6;   // "sound until a gap shows" — the thesis, literally
+      var THRESH = 0.45;       // posterior a candidate must reach to surface a gap.
+      // tuned (see SIGILS.md) so SOUND wins ~88% of arguments and a flagged gap
+      // is the rare, legible exception — charity-first, not never-flag.
       var cands, bel, asked, qLeft, askT, phase, verdict, glow;
       // phase: 0 = asking (questions narrowing), 1 = verdict held, then reload.
 
@@ -1352,7 +1356,7 @@ body.glitching::after {
         qLeft--;
         if (qLeft <= 0) {                                       // out of questions → decide
           var top = 0; for (var m = 1; m < n - 1; m++) if (bel[m] > bel[top]) top = m;
-          // accuse only if the leading candidate beats VALID *and* clears threshold
+          // surface a gap only if the leading candidate beats SOUND *and* clears threshold
           verdict = (bel[top] > bel[n - 1] && bel[top] >= THRESH) ? top : (n - 1);
           phase = 1; blink = 0;
         }
@@ -1382,7 +1386,7 @@ body.glitching::after {
           // label
           p.textAlign(p.LEFT, p.CENTER); p.textSize(Math.min(9, g.gap * 0.32));
           if (accuse) accent(p, 150 + glow * 105); else gfill(p, isValid ? A_ACTIVE : A_STRUCT);
-          p.text(isValid ? "λ valid" : cands[i], g.x0 + 3, y - h / 2 - g.gap * 0.18);
+          p.text(isValid ? "λ sound" : cands[i], g.x0 + 3, y - h / 2 - g.gap * 0.18);
         }
         // question cursor — the live accent while narrowing: a ticking probe at the edge
         if (phase === 0 && (blink % 24) < 14) { accent(p, 230); p.rect(W - pad - 3, pad, 3, H - 2 * pad); }
@@ -1406,6 +1410,110 @@ body.glitching::after {
           glow += (1 - glow) * 0.06;
           if (blink > (60 - st.k * 30)) build();                 // hold the verdict, then a fresh argument
         }
+        render();
+      };
+    }
+
+    /* timecards: the device, playing its big-button loop. a CARD slots into a
+       reader, the BIG BUTTON presses, and the card's TIMER runs — counting up
+       (stopwatch) or down to zero, where a countdown CHIMES. then the card swaps
+       out and a fresh one (new label, new mode, new deadline/streak) slots in.
+       each card keeps its own time; swap a card → its data swaps in.
+       phases: 0 slot-in  1 press  2 run  3 chime/done → swap. */
+    function timecards(p, holder, st) {
+      var W, H, blink = 0, phase, pt, card, slotY, btn;
+      var LABELS = ["WRITING", "COOKING", "STUDYING", "CROCHET", "WORK",
+        "READING", "TRAINING", "PRACTICE", "DEEP WORK", "GUITAR"];
+      var ALARMS = ["chime", "blip", "silent"];
+      function newCard() {
+        var down = p.random() < 0.55;                 // countdown vs open stopwatch
+        var secs = down ? (5 + Math.floor(p.random(50))) : 0;   // small numbers so it visibly ticks
+        // each card carries either a deadline ("N left") or a streak ("day N"), sometimes neither
+        var chip = p.random() < 0.7
+          ? (p.random() < 0.5 ? (1 + Math.floor(p.random(60)) + "d left") : ("day " + (1 + Math.floor(p.random(40)))))
+          : "";
+        return { label: LABELS[Math.floor(p.random(LABELS.length))], down: down,
+                 secs: secs, shown: secs, alarm: ALARMS[Math.floor(p.random(ALARMS.length))], chip: chip };
+      }
+      function build() { card = newCard(); phase = 0; pt = 0; }   // begin slot-in
+      function fmt(s) {                                            // mm:ss
+        s = Math.max(0, Math.floor(s));
+        var m = Math.floor(s / 60), ss = s % 60;
+        return (m < 10 ? "0" : "") + m + ":" + (ss < 10 ? "0" : "") + ss;
+      }
+      function geom() {
+        var pad = Math.min(W, H) * 0.10;
+        card.w = W - 2 * pad; card.h = (H - 2 * pad) * 0.46;
+        card.x = pad; card.restY = pad;                  // resting Y once slotted
+        slotY = card.restY + card.h * 0.5;               // the reader slot line
+        btn = { x: W / 2, y: H - pad - (H - 2 * pad) * 0.16, r: (H - 2 * pad) * 0.12 };
+      }
+      function render() {
+        geom();
+        // the reader SLOT — a faint mouth the card drops into (structure)
+        gstroke(p, A_FAINT, 1); p.noFill();
+        p.rect(card.x - 3, card.restY - 4, card.w + 6, card.h + 8, 3);
+        gstroke(p, A_STRUCT, 1); p.line(card.x, slotY, card.x + card.w, slotY);  // slot lip
+
+        // the CARD — slides down in phase 0, sits while running, lifts out at swap
+        var slide = phase === 0 ? (1 - pt) : 0;          // 1=above slot, 0=seated
+        var cy = card.restY - slide * (card.h + 14);
+        var seated = 1 - slide;
+        p.push(); p.translate(0, cy - card.restY);
+        gfill(p, A_FAINT + seated * 30); p.rect(card.x, card.restY, card.w, card.h, 3);
+        p.noFill(); gstroke(p, A_STRUCT + seated * 40, 1.4); p.rect(card.x, card.restY, card.w, card.h, 3);
+        // label
+        p.textAlign(p.LEFT, p.TOP); p.textSize(Math.min(11, card.h * 0.26));
+        gfill(p, A_ACTIVE * seated); p.text(card.label, card.x + 6, card.restY + 5);
+        // timer readout — the live accent while running; ▸ up / ▾ down
+        var running = phase === 2, arrow = card.down ? " ▾" : " ▸";
+        p.textSize(Math.min(15, card.h * 0.40));
+        if (running) accent(p, 220); else gfill(p, A_STRUCT * seated);
+        p.text(fmt(card.shown) + arrow, card.x + 6, card.restY + card.h * 0.46);
+        // deadline / streak chip, right-aligned
+        if (card.chip) { p.textAlign(p.RIGHT, p.BOTTOM); p.textSize(Math.min(8, card.h * 0.2));
+          gfill(p, A_FAINT + seated * 50); p.text(card.chip, card.x + card.w - 6, card.restY + card.h - 4); }
+        p.pop();
+
+        // the BIG BUTTON — presses in phase 1; a ring ripples out on press
+        var pressed = phase === 1 ? (1 - Math.abs(pt - 0.5) * 2) : 0;   // 0→1→0 over the press
+        p.noFill(); gstroke(p, A_STRUCT, 1.5); p.circle(btn.x, btn.y, btn.r * 2);
+        gfill(p, A_FAINT + pressed * 120); p.circle(btn.x, btn.y, btn.r * (1.1 - pressed * 0.25));
+        if (pressed > 0.05) { accent(p, 200 * pressed); p.noFill(); p.strokeWeight(1.4);
+          p.stroke(ACCENT[0], ACCENT[1], ACCENT[2], 180 * (1 - pressed));
+          p.circle(btn.x, btn.y, btn.r * (2 + pressed * 1.6)); }
+
+        // CHIME — phase 3: a countdown that hit zero pulses concentric accent rings
+        if (phase === 3 && card.alarm !== "silent") {
+          var k = (blink % 16) / 16;
+          accent(p, 220 * (1 - k)); p.noFill(); p.strokeWeight(1.5);
+          p.stroke(ACCENT[0], ACCENT[1], ACCENT[2], 200 * (1 - k));
+          p.circle(btn.x, btn.y, btn.r * (2 + k * 3));
+          p.textAlign(p.CENTER, p.CENTER); p.textSize(10); accent(p, 200);
+          p.text(card.alarm === "chime" ? "♪" : "!", btn.x, btn.y);
+        }
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h;
+        p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]); p.textFont("monospace"); build();
+        if (reduce) { phase = 2; pt = 0; render(); p.noLoop(); }   // a seated, running card
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
+      p.draw = function () {
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);   // shared rhythm
+        var spd = 1 + st.k * 1.4;                        // hover speeds the whole loop
+        if (phase === 0) { pt += 0.05 * spd; if (pt >= 1) { phase = 1; pt = 0; } }        // slot in
+        else if (phase === 1) { pt += 0.06 * spd; if (pt >= 1) { phase = 2; pt = 0; } }   // press
+        else if (phase === 2) {                                                          // run
+          pt += (0.4 + st.k * 0.5);                      // tick the clock (faster on hover)
+          if (pt >= 1) { pt = 0;
+            card.shown += card.down ? -1 : 1;
+            if (card.down && card.shown <= 0) { card.shown = 0; phase = 3; blink = 0; pt = 0; }
+            else if (!card.down && card.shown >= 60) { phase = 3; blink = 0; pt = 0; }   // stopwatch caps, then swaps
+          }
+        } else { pt += 0.012 * spd; if (pt >= 1) build(); }    // hold chime/done, then swap a fresh card
         render();
       };
     }
@@ -1440,7 +1548,7 @@ body.glitching::after {
          };
        }
        ──────────────────────────────────────────────────────────────────── */
-    var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon, fallacynator: fallacynator };
+    var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon, steelman: steelman, timecards: timecards };
 
     function boot() {
       // shuffle the sigil tiles in place each load (Fisher–Yates), reappending
