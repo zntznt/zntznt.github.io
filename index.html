@@ -1712,6 +1712,48 @@ body.glitching::after {
           io.observe(pairs[k].holder);
         }
       }
+
+      // drag-to-pan for mouse/pen: touch already scrolls the rail natively, but a
+      // mouse user had only the scrollbar. grab-and-drag the strip like a finger.
+      // start on the strip, then track move/up on WINDOW — the p5 canvases sit on
+      // top of the strip, so tracking globally keeps the drag alive over them.
+      // the catch: every card is an <a>, so a drag that ends on a card must NOT
+      // fire its link. we track distance and, past a small threshold, swallow the
+      // next click in the capture phase — a true click (no movement) passes clean.
+      if (strip) {
+        var dragging = false, startX = 0, startScroll = 0, moved = 0;
+        function onMove(e) {
+          if (!dragging) return;
+          var dx = e.clientX - startX;
+          moved = Math.max(moved, Math.abs(dx));
+          strip.scrollLeft = startScroll - dx;
+          if (moved > 6) e.preventDefault();     // suppress text-selection while dragging
+        }
+        function onUp() {
+          if (!dragging) return;
+          dragging = false;
+          strip.style.cursor = "grab";
+          strip.style.scrollSnapType = "";       // let CSS snap-to-card settle it
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onUp);
+          if (moved > 6) {   // it was a drag, not a click — eat the link activation once
+            window.addEventListener("click", function swallow(ev) {
+              ev.stopPropagation(); ev.preventDefault();
+              window.removeEventListener("click", swallow, true);
+            }, true);
+          }
+        }
+        strip.addEventListener("pointerdown", function (e) {
+          if (e.pointerType === "touch" || e.button !== 0) return;   // let touch/native handle fingers
+          dragging = true; moved = 0;
+          startX = e.clientX; startScroll = strip.scrollLeft;
+          strip.style.cursor = "grabbing";
+          strip.style.scrollSnapType = "none";   // mandatory snap fights a free drag; restore on release
+          window.addEventListener("pointermove", onMove, { passive: false });
+          window.addEventListener("pointerup", onUp);
+        });
+        strip.style.cursor = "grab";   // signal the affordance
+      }
     }
     function start() { whenP5(boot); }   // need both DOM ready and p5 loaded
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
