@@ -720,6 +720,11 @@ body.glitching::after {
             <span class="sigil-label">simulations</span>
             <span class="sigil-desc">economy &amp; feedback sim</span>
           </a>
+          <a class="sigil" data-sketch="hinter" href="https://zntznt.com/hinterland/">
+            <span class="sigil-canvas" aria-hidden="true"></span>
+            <span class="sigil-label">hinterland</span>
+            <span class="sigil-desc">region-map generator</span>
+          </a>
           <a class="sigil" data-sketch="outline" href="https://zntznt.com/pointliner/">
             <span class="sigil-canvas" aria-hidden="true"></span>
             <span class="sigil-label">pointliner</span>
@@ -1518,6 +1523,94 @@ body.glitching::after {
       };
     }
 
+    /* hinterland: a region-map GENERATOR, running. a territory subdivides into
+       cells around a bright CAPITAL; a road/river network wires each region back
+       to the seat, and every region's fill reads its WEALTH — bright at the
+       center, fading to the neglected edge (the hinterland the name is about).
+       it regenerates on a timer: seed → grow cells → wire → let it sit → reseed. */
+    function hinter(p, holder, st) {
+      var W, H, R, cap, growth = 0, phase = 0, pt = 0;
+      // scatter seeds, then Voronoi-by-nearest-seed over a coarse pixel grid.
+      // the seed closest to center is the CAPITAL; wealth falls off with distance
+      // from it, so the periphery is literally the underserved edge (the thesis).
+      function build() {
+        var n = 7 + Math.floor(p.random(4));             // 7–10 regions
+        R = [];
+        for (var i = 0; i < n; i++) {
+          R.push({ x: p.random(W * 0.08, W * 0.92), y: p.random(H * 0.08, H * 0.92) });
+        }
+        // capital = seed nearest the map center; the rest sort by distance to it
+        var cx = W / 2, cy = H / 2, best = 0, bd = 1e9;
+        for (var j = 0; j < R.length; j++) {
+          var d = Math.hypot(R[j].x - cx, R[j].y - cy);
+          if (d < bd) { bd = d; best = j; }
+        }
+        cap = R[best];
+        var maxD = 1;
+        for (var m = 0; m < R.length; m++) {
+          R[m].d = Math.hypot(R[m].x - cap.x, R[m].y - cap.y);
+          if (R[m].d > maxD) maxD = R[m].d;
+        }
+        // wealth 1 (served, at the seat) → 0.15 (the far edge). drives fill alpha.
+        for (var w = 0; w < R.length; w++) R[w].wealth = 1 - 0.85 * (R[w].d / maxD);
+        growth = 0; phase = 0; pt = 0;
+      }
+      // fill each cell by painting grid points owned by its seed. cheap Voronoi:
+      // one square per cell of the coarse grid, tinted by the owning region's
+      // wealth. `g` = how far the growth wipe has reached (regions bloom in).
+      function cells(g) {
+        var step = Math.max(6, Math.floor(W / 22));
+        for (var y = 0; y < H; y += step) {
+          for (var x = 0; x < W; x += step) {
+            var own = 0, od = 1e9;
+            for (var i = 0; i < R.length; i++) {
+              var d = Math.hypot(x - R[i].x, y - R[i].y);
+              if (d < od) { od = d; own = i; }
+            }
+            var rg = R[own];
+            if (rg.d / (W * 0.7) > g) continue;          // not yet grown this far out
+            var a = A_FAINT + rg.wealth * (A_ACTIVE - A_FAINT);
+            gfill(p, a * (0.5 + 0.5 * st.k));
+            p.rect(x, y, step - 1, step - 1);
+          }
+        }
+      }
+      function render() {
+        cells(growth);
+        // road/river network: every region wired back toward the capital (trunk
+        // lines to the seat). thicker + brighter the wealthier the endpoint.
+        for (var i = 0; i < R.length; i++) {
+          if (R[i] === cap) continue;
+          if (R[i].d / (W * 0.7) > growth) continue;
+          gstroke(p, A_STRUCT * (0.4 + R[i].wealth), 0.5 + R[i].wealth * 1.2);
+          p.line(R[i].x, R[i].y, cap.x, cap.y);
+        }
+        // region seats — faint nodes for the edge, the bright accent for the seat
+        for (var j = 0; j < R.length; j++) {
+          if (R[j].d / (W * 0.7) > growth) continue;
+          if (R[j] === cap) continue;
+          gfill(p, A_STRUCT); p.circle(R[j].x, R[j].y, 2.5);
+        }
+        accent(p); p.circle(cap.x, cap.y, 4 + st.k * 3);   // the capital, alive
+        gstroke(p, A_ACTIVE * st.k, 1); p.noFill();
+        p.circle(cap.x, cap.y, 8 + (1 - st.k) * 6);        // a served-radius ring, on hover
+      }
+      p.setup = function () {
+        var b = box(holder); W = b.w; H = b.h; p.createCanvas(W, H); p.frameRate(30);
+        p.background(PURP[0], PURP[1], PURP[2]); build(); growth = 1;
+        if (reduce) { render(); p.noLoop(); }
+      };
+      p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); build(); growth = 1; };
+      p.draw = function () {
+        st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
+        trail(p, W, H, TRAIL_A - st.k * 18);               // shared breathing
+        var spd = 1 + st.k * 1.4;
+        if (phase === 0) { growth += 0.035 * spd; if (growth >= 1) { growth = 1; phase = 1; pt = 0; } }  // regions bloom out
+        else { pt += 0.006 * spd; if (pt >= 1) build(); }  // let the region sit, then reseed a new world
+        render();
+      };
+    }
+
     /* ─── adding a sigil card ──────────────────────────────────────────────
        A card is an instance-mode p5 closure: fn(p, holder, st).
          • holder = the .sigil-canvas span p5 renders into.
@@ -1548,7 +1641,7 @@ body.glitching::after {
          };
        }
        ──────────────────────────────────────────────────────────────────── */
-    var SK = { sim: sim, outline: outline, laser: laser, deck: deck, icon: icon, steelman: steelman, timecards: timecards };
+    var SK = { sim: sim, hinter: hinter, outline: outline, laser: laser, deck: deck, icon: icon, steelman: steelman, timecards: timecards };
 
     function boot() {
       // shuffle the sigil tiles in place each load (Fisher–Yates), reappending
