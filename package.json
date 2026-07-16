@@ -1,0 +1,19 @@
+{
+  "name": "zntznt.github.io",
+  "private": true,
+  "description": "Linting toolchain for the static site. The site itself has no build step.",
+  "scripts": {
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:html",
+    "lint:js": "eslint .",
+    "lint:css": "stylelint \"files/styles.css\" \"*.html\"",
+    "lint:html": "html-validate \"*.html\""
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-html": "^8.0.0",
+    "html-validate": "^9.0.0",
+    "postcss-html": "^1.7.0",
+    "stylelint": "^16.0.0",
+    "stylelint-config-standard": "^38.0.0"
+  }
+}
