@@ -37,6 +37,7 @@ body {
   padding: 5vw;
   display: -webkit-box;
   display: -webkit-flex;
+  /* stylelint-disable-next-line declaration-property-value-no-unknown -- legacy IE fallback */
   display: -ms-flexbox;
   display: flex;
   -webkit-box-pack: center;
@@ -134,17 +135,19 @@ body {
 
 <script src="files/like.js"></script>
 <script>
+/* global alternatives */  /* defined in files/like.js */
+/* exported hideHint */    /* wired via <body onclick> */
 var liked = "";
 function randomize() {
   var alternative = alternatives[Math.floor(Math.random() * alternatives.length)];
   liked = "I LIKE " + alternative;
   document.getElementById("flex").innerHTML = liked;   // kept for a11y/source-of-truth
   document.title = liked;
-  if (window.crtPaint) crtPaint();                       // redraw the texture
+  if (window.crtPaint) window.crtPaint();                // redraw the texture
 }
 function hideHint() {
   window.hintShown = false;
-  if (window.crtPaint) crtPaint();
+  if (window.crtPaint) window.crtPaint();
 }
 randomize();
 </script>
@@ -155,11 +158,10 @@ randomize();
      then adds scanlines + vignette so the curve reads as a real tube. -->
 <script>
 (function () {
-  var gl, prog, tex, texCanvas, tctx, uK, uTime, uRes, raf;
+  var gl, prog, tex, texCanvas, tctx, uK, uRes;
   if (window.hintShown === undefined) window.hintShown = true;
   var DPR = Math.min(window.devicePixelRatio || 1, 2);
   var canvas = document.getElementById("crt");
-  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // --- the 2D canvas that holds the rendered text (becomes the GL texture) ---
   texCanvas = document.createElement("canvas");
@@ -214,7 +216,7 @@ randomize();
   var VS = "attribute vec2 p; varying vec2 v; void main(){ v=(p+1.0)*0.5; v.y=1.0-v.y; gl_Position=vec4(p,0.0,1.0);}";
   var FS = [
     "precision highp float;",
-    "varying vec2 v; uniform sampler2D t; uniform float k; uniform vec2 res; uniform float time;",
+    "varying vec2 v; uniform sampler2D t; uniform float k; uniform vec2 res;",
     "void main(){",
     "  vec2 c = v - 0.5;",                              // centered uv (-0.5..0.5)
     "  float r2 = dot(c, c);",                          // squared distance from center
@@ -256,7 +258,6 @@ randomize();
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     uK = gl.getUniformLocation(prog, "k");
     uRes = gl.getUniformLocation(prog, "res");
-    uTime = gl.getUniformLocation(prog, "time");
     return true;
   }
   function uploadTexture() {

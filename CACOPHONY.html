@@ -187,7 +187,7 @@ body {
 
   <div id="stage">
     <div id="word" aria-live="polite"></div>
-    <button id="enter">begin</button>
+    <button id="enter" type="button">begin</button>
     <div id="enter-caption">there is noise before there is a world</div>
   </div>
 
@@ -290,8 +290,6 @@ body {
     var BINS = 256;
     var smooth = new Float32Array(BINS);
     var started = false;
-    var rafId = null;
-    var startClock = 0;
 
     function setupAudio() {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -389,7 +387,7 @@ body {
     var rot = 0;
 
     function frame() {
-      rafId = requestAnimationFrame(frame);
+      requestAnimationFrame(frame);
 
       var time = audio ? audio.currentTime : 0;
       var pal = paletteAt(time);
@@ -583,7 +581,6 @@ body {
       var p = audio.play();
       if (p && p.catch) p.catch(function () {});
 
-      startClock = performance.now();
       if (!started) {
         started = true;
         frame();

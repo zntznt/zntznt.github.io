@@ -1,3 +1,4 @@
+/* exported alternatives */  /* consumed by DUALITY.html */
 var alternatives = [
   'COCA-COLA',
   'MECHANICAL KEYBOARDS',
