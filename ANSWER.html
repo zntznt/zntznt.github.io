@@ -446,10 +446,8 @@
     caret.className = 'caret';
     caret.innerHTML = '&nbsp;';
     stage.appendChild(caret);
-    var buf = '';
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
-      buf += ch;
       caret.insertAdjacentText('beforebegin', ch);
       var d = (ch === '.' || ch === '—' || ch === ',' || ch === '?') ? 220 : (18 + Math.random() * 40);
       await sleep(reduceMotion ? Math.min(d, 12) : d);

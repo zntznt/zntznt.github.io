@@ -52,7 +52,7 @@ body {
     /* horizontal scanlines — 1px dark every 3px, the CRT signature */
     repeating-linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 0,
       rgba(0, 0, 0, 0) 2px,
       rgba(0, 0, 0, 0.22) 3px
     ),
@@ -466,6 +466,7 @@ body.glitching::after {
   scroll-snap-align: start;
   gap: 6px;            /* even rhythm between canvas, label, desc */
 }
+/* stylelint-disable-next-line no-duplicate-selectors -- also styled in the aberration section above; concerns kept separate */
 .sigil:hover, .sigil:focus-visible {
   box-shadow: 0 0 16px rgba(51, 255, 51, 0.35);
   outline: none;
@@ -510,7 +511,7 @@ body.glitching::after {
   }
 }
 </style>
-<script type="text/javascript">
+<script>
   var totalCount = 29;
   // the screen glitch (and the bg swap it drives) fires on an irregular gap:
   // never sooner than this floor, often longer, so it's spaced out and never
@@ -1068,7 +1069,7 @@ body.glitching::after {
        stat-line bars filling in (Speed/Aim/Assault/Save/Morale) and a
        ticking points total recalculating as the list assembles */
     function laser(p, holder, st) {
-      var W, H, rows = 5, stats = 5, pad = 9, blink = 0, list, addT = 0, pts = 0, ptsT = 0, rebuildT = 0;
+      var W, H, rows = 5, stats = 5, pad = 9, list, addT = 0, pts = 0, rebuildT = 0;
       // force designations stamped in the header — a random call-sign per roster
       var TITLES = ["TF-ZNT", "VANGUARD", "9TH LEGION", "IRON PACT", "NOVA CELL",
                     "BLACK SUN", "HELLBORE", "STORMGUARD", "EXO-3", "RECKONING"];
@@ -1099,7 +1100,7 @@ body.glitching::after {
         p.text(title, lx, pad + HEAD * 0.42);
         gstroke(p, A_STRUCT, 1); p.line(lx, pad + HEAD - 2, lx + lw, pad + HEAD - 2);
         for (var i = 0; i < list.length; i++) {
-          var it = list[i], y = rowY(i), rev = it.reveal;
+          var it = list[i], y = rowY(i);
           // the roster STRUCTURE is drawn at full opacity EVERY frame — it's a
           // static spec sheet, so the shared trail would erase it if we faded it
           // in. only the stat-bar FILL VALUES animate (that's the "live" layer).
@@ -1119,7 +1120,7 @@ body.glitching::after {
         accent(p, 230); p.rect(lx, ty - th / 2, lw * frac, th);  // total fill: the live accent layer
         accent(p, 230); p.circle(lx + lw * frac, ty, 3.5 + st.k * 1.5); // ticking total readout head
       }
-      var ptsMax = 1, built = 0;
+      var ptsMax = 1;
       p.setup = function () {
         var b = box(holder); W = b.w; H = b.h;
         p.createCanvas(W, H); p.frameRate(30);
@@ -1134,7 +1135,7 @@ body.glitching::after {
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);   // shared rhythm
+        trail(p, W, H, TRAIL_A - st.k * 18);
         // the whole roster is always present; every stat bar eases toward its
         // target continuously, so the spec sheet is alive across all rows.
         for (var i = 0; i < list.length; i++) {
@@ -1165,7 +1166,7 @@ body.glitching::after {
     /* termdecks: terminal-reference FLASHCARDS — a grid of cards that FLIP
        front↔back to reveal answers; the flip is the signature motion */
     function deck(p, holder, st) {
-      var W, H, COLS = 3, ROWS = 3, pad = 9, blink = 0, cards, flipT = 0, rebuildT = 0;
+      var W, H, COLS = 3, ROWS = 3, pad = 9, cards, flipT = 0, rebuildT = 0;
       var FRONT = "λ$#>/{}*+!?;:&|^~".split(""), BACK = "·=─•◦▪▫".split("");
       function build() {
         cards = [];
@@ -1215,7 +1216,7 @@ body.glitching::after {
       p.windowResized = function () { var b = box(holder); W = b.w; H = b.h; p.resizeCanvas(W, H); };
       p.draw = function () {
         st.k += ((st.hover ? 1 : 0) - st.k) * 0.08;
-        trail(p, W, H, TRAIL_A - st.k * 18); blink += 1 + Math.round(st.k * 2);   // shared rhythm
+        trail(p, W, H, TRAIL_A - st.k * 18);
         // periodic FULL grid reshuffle: a NEW glyph set every ~10–14s (300–420
         // frames), hover shortens it. between rebuilds individual cards keep flipping.
         if (rebuildT-- <= 0) { build(); act = -1; rebuildT = Math.round((300 + p.random(120)) * (1 - st.k * 0.4)); }
